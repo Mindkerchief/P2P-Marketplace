@@ -1,0 +1,38 @@
+"use client";
+
+import Image from 'next/image';
+import Link from 'next/link';
+import SearchBar from './ui/search-bar';
+
+export default function Navbar() {
+    return (
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-800 text-white p-2">
+            <div className="container mx-auto flex items-center justify-between">
+                {/* Left Side */}
+                <div className="flex items-center min-w-0">
+                    <Link href="/" className="flex items-center min-w-0">
+                        <Image src="/logo.png" alt="Logo" width={40} height={40} className="mr-2" />
+                    </Link>
+                    <div className="ml-2 mr-8 text-2xl font-bold truncate max-w-36 sm:max-w-48">P2P Marketplace</div>
+                    <div className="flex-1 min-w-0">
+                        <SearchBar className="shrink" />
+                    </div>
+                </div>
+                
+                {/* Right Side */}
+                <div className="flex items-center gap-1">
+                    <Link href="/" className="text-l px-3 py-2 hover:bg-gray-700 rounded whitespace-nowrap truncate">Home</Link>
+
+                    {/* Display when user is signed in */}
+                    <Link href="/profile" className="md-inline-flex items-center gap-2 text-xl px-3 py-2 hover:bg-gray-700 rounded">
+                        <Image src="/profile-icon.png" alt="Profile" width={32} height={32} className="rounded-full" />
+                    </Link>
+                    <Link href="/logout" className="text-l px-3 py-2 hover:bg-gray-700 rounded whitespace-nowrap truncate">Log Out</Link>
+
+                    {/* Display when user is not sign in */}
+                    <Link href="/login" className="text-l px-3 py-2 hover:bg-gray-700 rounded whitespace-nowrap truncate">Log In</Link>
+                </div>
+            </div>
+        </nav>
+    );
+}
