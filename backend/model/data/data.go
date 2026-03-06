@@ -1,6 +1,6 @@
 package data
 
-type User struct {
+type UserFromReq struct {
 	UserId    string `json:"userId"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
@@ -8,4 +8,14 @@ type User struct {
 	Email     string `json:"email"`
 	IpAddress string `json:"ipAddress"`
 	UserAgent string `json:"UserAgent"`
+}
+
+type UserFromDb struct {
+	UserId    string `gorm:"column:id"                  json:"userId"`
+	FirstName string `gorm:"column:first_name"          json:"firstName"`
+	LastName  string `gorm:"column:last_name"           json:"lastName"`
+	Password  string `gorm:"column:password_hash"       json:"password"`
+	Email     string `gorm:"column:email"               json:"email"`
+	Role      string `gorm:"column:role"                json:"role"`
+	Status    string `gorm:"column:verification_status" json:"status"`
 }

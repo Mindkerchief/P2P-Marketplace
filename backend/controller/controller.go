@@ -15,7 +15,7 @@ func SignUpUser(c *fiber.Ctx) error {
 	// Call database connection and initialize user struct
 	fmt.Println("/auth/signup called")
 	db := middleware.DBConn
-	var rcvUser = data.User{}
+	var rcvUser = data.UserFromReq{}
 
 	// Parse request body into user struct
 	if err := c.BodyParser(&rcvUser); err != nil {
@@ -59,10 +59,11 @@ func SignUpUser(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 500, "New user data insertion failed", res.Error)
 	}
 
-	userId := ""
-	// Retrieve the user_id using email
-	if err := db.Raw("SELECT id FROM public.users WHERE email=$1",
-		rcvUser.Email).Scan(&userId).Error; err != nil {
+	var userFromDb = data.UserFromDb{}
+
+	// Get user data from database
+	if err := db.Raw("SELECT id, first_name, last_name, email, password_hash, role, verification_status FROM public.users WHERE email=$1",
+		rcvUser.Email).Scan(&userFromDb).Error; err != nil {
 		return SendErrorResponse(c, 500, "User data retrieval failed", err)
 	}
 
@@ -76,13 +77,13 @@ func SignUpUser(c *fiber.Ctx) error {
 
 	// Store hashed token and expiry in sessions table
 	if res := db.Exec("INSERT INTO public.sessions (user_id, session_token, ip_address, user_agent, expires_at) VALUES ($1,$2,$3,$4,$5)",
-		userId, hashedSessionID, rcvUser.IpAddress, rcvUser.UserAgent, sessionExpiration); res.Error != nil {
+		userFromDb.UserId, hashedSessionID, rcvUser.IpAddress, rcvUser.UserAgent, sessionExpiration); res.Error != nil {
 		return SendErrorResponse(c, 500, "Failed to persist session", res.Error)
 	}
 
 	// Set cookie with raw token
 	cookie := &fiber.Cookie{
-		Name:     "session_id",
+		Name:     "session_token",
 		Value:    sessionId,
 		HTTPOnly: true,
 		Secure:   true,
@@ -98,9 +99,11 @@ func SignUpUser(c *fiber.Ctx) error {
 		Message: "User created successfully",
 		Data: map[string]interface{}{
 			"user": map[string]interface{}{
-				"firstName": rcvUser.FirstName,
-				"lastName":  rcvUser.LastName,
-				"email":     rcvUser.Email,
+				"firstName": userFromDb.FirstName,
+				"lastName":  userFromDb.LastName,
+				"email":     userFromDb.Email,
+				"role":      userFromDb.Role,
+				"status":    userFromDb.Status,
 			},
 		},
 	})
@@ -110,23 +113,17 @@ func LogInUser(c *fiber.Ctx) error {
 	// Call database connection and initialize user struct
 	fmt.Println("/auth/login called")
 	db := middleware.DBConn
-	var rcvUser = data.User{}
+	var rcvUser = data.UserFromReq{}
 
 	// Parse request body into user struct
 	if err := c.BodyParser(&rcvUser); err != nil {
 		return SendErrorResponse(c, 400, "Invalid request body", err)
 	}
 
-	var userFromDb struct {
-		UserId    string `gorm:"column:id"            json:"userId"`
-		FirstName string `gorm:"column:first_name"    json:"firstName"`
-		LastName  string `gorm:"column:last_name"     json:"lastName"`
-		Password  string `gorm:"column:password_hash" json:"password"`
-		Email     string `gorm:"column:email"         json:"email"`
-	}
+	var userFromDb = data.UserFromDb{}
 
-	// Get hashed password from the database
-	if err := db.Raw("SELECT id, first_name, last_name, email, password_hash FROM public.users WHERE email=$1",
+	// Get user data from database
+	if err := db.Raw("SELECT id, first_name, last_name, email, password_hash, role, verification_status FROM public.users WHERE email=$1",
 		rcvUser.Email).Scan(&userFromDb).Error; err != nil {
 		return SendErrorResponse(c, 500, "User data retrieval failed", err)
 	}
@@ -153,7 +150,7 @@ func LogInUser(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 500, "Failed to persist session", res.Error)
 	}
 
-	// Set cookie with raw token (sent to client)
+	// Set cookie with raw token
 	cookie := &fiber.Cookie{
 		Name:     "session_token",
 		Value:    sessionId,
@@ -171,9 +168,11 @@ func LogInUser(c *fiber.Ctx) error {
 		Message: "User created successfully",
 		Data: map[string]interface{}{
 			"user": map[string]interface{}{
-				"firstName": rcvUser.FirstName,
-				"lastName":  rcvUser.LastName,
-				"email":     rcvUser.Email,
+				"firstName": userFromDb.FirstName,
+				"lastName":  userFromDb.LastName,
+				"email":     userFromDb.Email,
+				"role":      userFromDb.Role,
+				"status":    userFromDb.Status,
 			},
 		},
 	})
@@ -185,7 +184,7 @@ func Authenticate(c *fiber.Ctx) error {
 	db := middleware.DBConn
 
 	// Read cookie
-	sessionId := c.Cookies("session_id")
+	sessionId := c.Cookies("session_token")
 	if sessionId == "" {
 		fmt.Println("Missing session token")
 		return SendErrorResponse(c, 401, "Missing session token", nil)
@@ -207,7 +206,7 @@ func Authenticate(c *fiber.Ctx) error {
 	}
 
 	// Load User
-	var user data.User
+	var user data.UserFromReq
 	if err := db.Raw("SELECT id, first_name, last_name, email FROM public.users WHERE id=$1", session.UserID).Scan(&user).Error; err != nil {
 		return SendErrorResponse(c, 500, "User lookup failed", err)
 	}
@@ -231,7 +230,7 @@ func Me(c *fiber.Ctx) error {
 func Logout(c *fiber.Ctx) error {
 	fmt.Println("/auth/logout called")
 	db := middleware.DBConn
-	token := c.Cookies("session_id")
+	token := c.Cookies("session_token")
 	if token == "" {
 		return SendErrorResponse(c, 400, "No session token", nil)
 	}
@@ -241,7 +240,7 @@ func Logout(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 500, "Failed to delete session", res.Error)
 	}
 
-	// clear cookie
+	// Clear cookie from
 	c.Cookie(&fiber.Cookie{
 		Name:     "session_token",
 		Value:    "",
