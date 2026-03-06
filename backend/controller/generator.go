@@ -20,7 +20,7 @@ func GenerateHashPassword(password string) string {
 	return string(hashedPassword)
 }
 
-func GenerateSession() (string, time.Time, error) {
+func GenerateToken() (string, time.Time, error) {
 	sessionExpiration := time.Now().Add(7 * 24 * time.Hour)
 
 	b := make([]byte, 32)
@@ -32,7 +32,7 @@ func GenerateSession() (string, time.Time, error) {
 }
 
 // Hash the token before storing in DB (store only this)
-func HashSessionId(token string) string {
+func HashToken(token string) string {
 	h := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(h[:])
 }
