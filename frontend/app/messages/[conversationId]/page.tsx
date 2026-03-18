@@ -30,6 +30,7 @@ import ChatHeader         from "@/components/messages/chat-header";
 import ListingContextCard from "@/components/messages/listing-context-card";
 import MessageBubble      from "@/components/messages/message-bubble";
 import MessageInput       from "@/components/messages/message-input";
+import OrderStatusPanel   from "@/components/messages/OrderStatusPanel";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -642,6 +643,16 @@ export default function ConversationPage() {
 
         <ChatHeader conversation={conversation} onDelete={handleDeleteConversation} />
         <ListingContextCard listing={conversation.listing} />
+
+        {/* Order / transaction status panel */}
+        <OrderStatusPanel
+          conversationId={conversationId}
+          listingId={conversation.listing.id}
+          listingType={conversation.listing.listingType}
+          listingTitle={conversation.listing.title}
+          isSeller={conversation.isSeller}
+          currentUserId={effectiveCurrentUserId}
+        />
 
         {/* Messages area */}
         <div className="flex-1 overflow-y-auto no-scroll px-4 py-3">

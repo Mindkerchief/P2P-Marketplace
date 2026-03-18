@@ -10,6 +10,7 @@ import {
   Sun, Moon, MessageCircle, LogOut, User, Home,
   ChevronDown, Tag, Store, Wrench, LayoutGrid, UserPlus, ShieldCheck,
 } from "lucide-react";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import { cn } from "@/lib/utils";
 
 // ─── Tab config ────────────────────────────────────────────────────────────────
@@ -151,6 +152,9 @@ export default function Navbar() {
 
           {/* ── RIGHT: Actions ──────────────────────────────────── */}
           <div className="flex items-center gap-1 shrink-0">
+
+            {/* Notification Bell — only when logged in */}
+            {isAuth && <NotificationBell />}
 
             {/* Profile dropdown */}
             <div className="relative" ref={dropdownRef}>

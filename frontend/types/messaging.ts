@@ -93,3 +93,20 @@ export interface ReplyPreview {
   /** Text or label like "📷 Photo" / "🎥 Video" */
   contentPreview: string;
 }
+
+// ─── Order / transaction status ───────────────────────────────────────────────
+
+/** Unified order status across sell / rent / service */
+export type OrderStatus =
+  | "PENDING"      // initial state — awaiting seller action
+  | "CONFIRMED"    // seller confirmed the order
+  | "MEETUP_SET"   // meetup scheduled
+  | "COMPLETED"    // sale done / service done / rent returned
+  | "CANCELLED";   // cancelled by either party
+
+export interface OrderStatusInfo {
+  status: OrderStatus;
+  updatedAt: string;
+  updatedBy: string;   // userId
+  note?: string;       // optional message to buyer
+}

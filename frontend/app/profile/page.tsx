@@ -13,6 +13,7 @@ import { useUser } from "@/utils/UserContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import ReviewsSection from "@/components/reviews/ReviewsSection";
 import {
   deactivateProfile,
   getProfileData,
@@ -954,6 +955,17 @@ export default function ProfilePage() {
               : <div className="text-center py-14"><Bookmark className="w-10 h-10 text-stone-200 dark:text-stone-700 mx-auto mb-3" /><p className="font-semibold text-stone-400 text-sm">No bookmarked items yet</p></div>
           )}
         </div>
+
+        {/* ── Reviews & Ratings ── */}
+        <div className="mt-5">
+          <ReviewsSection
+            sellerId={isViewingExternalProfile ? externalUserId : (user?.userId ?? "current-user")}
+            sellerName={isViewingExternalProfile ? (profileUser?.firstName ?? "Seller") : (profileUser?.firstName ?? user?.firstName ?? "You")}
+            currentUserId={user?.userId ?? "current-user"}
+            isOwnProfile={!isViewingExternalProfile}
+          />
+        </div>
+
       </div>
     </div>
   );

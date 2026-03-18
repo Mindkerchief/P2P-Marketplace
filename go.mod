@@ -2,10 +2,7 @@ module p2p_marketplace
 
 go 1.25.0
 
-require (
-	github.com/resend/resend-go/v2 v2.28.0
-	gorm.io/driver/postgres v1.6.0
-)
+require gorm.io/driver/postgres v1.6.0
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
@@ -17,6 +14,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/savsgio/gotils v0.0.0-20230208104028-c358bd845dee // indirect
+	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
