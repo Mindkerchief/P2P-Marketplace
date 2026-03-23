@@ -19,6 +19,8 @@ import VerificationBadge from "@/components/verification-badge";
 import { LoadingPage } from "@/components/loading";
 import { RequestToRentModal, BookServiceModal } from "@/components/request-modals";
 import { ReportModal } from "@/components/report-modal";
+import ScheduleManager from "@/components/schedule-manager";
+import { useSchedule } from "@/utils/ScheduleContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -227,6 +229,7 @@ export default function ListingDetailPage() {
   const [shownContactNumber, setShownContactNumber] = useState<string | null>(null);
   const [deleting,    setDeleting]   = useState(false);
   const [messaging,   setMessaging]  = useState(false);
+  const { getSchedule } = useSchedule();
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [isFetchingContact, setIsFetchingContact] = useState(false);
 
@@ -285,6 +288,7 @@ export default function ListingDetailPage() {
   const listingStatus = (listing.status ?? "").trim().toLowerCase();
   const listingSellStatus = (listing.sellStatus ?? "").trim().toLowerCase();
   const isSold = isSell && (listingStatus === "sold" || listingSellStatus === "sold");
+  const listingSchedule = (isRent || isService) ? getSchedule(listing.id) : null;
   const images       = extra.images.filter(Boolean);
   const sellerRating = Number.isFinite(listing.seller.rating) ? Number(listing.seller.rating) : 0;
   const hasSellerRating = sellerRating > 0;
@@ -584,6 +588,15 @@ export default function ListingDetailPage() {
             {/* ── Type-specific info cards ── */}
             {isRent    && <RentInfoCard    extra={extra} />}
             {isService && <ServiceInfoCard extra={extra} />}
+
+            {/* ── Schedule manager (seller view) ── */}
+            {(isRent || isService) && isOwnListing && (
+              <ScheduleManager
+                listingId={listing.id}
+                listingType={listing.type as "rent" | "service"}
+                listingTitle={listing.title}
+              />
+            )}
 
             {/* ── Listing info rows ── */}
             <div className="bg-white dark:bg-[#1c1f2e] rounded-2xl border border-stone-200 dark:border-[#2a2d3e] shadow-sm divide-y divide-stone-100 dark:divide-[#2a2d3e]">

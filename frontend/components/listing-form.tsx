@@ -4,10 +4,11 @@ import { useState, useRef, KeyboardEvent, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ImagePlus, X, ChevronRight, ChevronLeft, AlertCircle,
-  CheckCircle2, Loader2, Info, Plus,
+  CheckCircle2, Loader2, Info, Plus, CalendarDays, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUser } from "@/utils/UserContext";
+import { useSchedule, type ListingSchedule, type RecurringDay } from "@/utils/ScheduleContext";
 import {
   getBarangaysByCity,
   getCitiesByProvince,
@@ -119,7 +120,7 @@ export const FORM_CONFIG = {
     activeTxt:    "text-white",
     btnCls:       "bg-teal-700 hover:bg-teal-600 text-white",
     badgeDot:     "bg-teal-600",
-    steps:        ["Basic Info", "Rental Terms", "Location & Photos"] as const,
+    steps:        ["Basic Info", "Rental Terms", "Schedule", "Location & Photos"] as const,
   },
   service: {
     label:        "Offer a Service",
@@ -130,7 +131,7 @@ export const FORM_CONFIG = {
     activeTxt:    "text-white",
     btnCls:       "bg-violet-700 hover:bg-violet-600 text-white",
     badgeDot:     "bg-violet-600",
-    steps:        ["Basic Info", "Service Details", "Location & Photos"] as const,
+    steps:        ["Basic Info", "Service Details", "Schedule", "Location & Photos"] as const,
   },
 } as const;
 
@@ -1190,7 +1191,107 @@ export default function ListingForm({ type, initialData, isEdit = false, listing
     );
   };
 
-  // ── Step 2 — Location & Photos ───────────────────────────────────────────────
+
+  // ── Step 2 (rent/service only) — Schedule ────────────────────────────────────
+  const DAY_NAMES_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const renderS2Schedule = () => (
+    <>
+      <Section title="Availability Schedule">
+        <div className="space-y-5">
+          <p className={cn("text-sm leading-relaxed", cfg.accentCls)}>
+            Set when buyers can request to rent or book your listing. You can always update this later from the listing page.
+          </p>
+
+          {/* Operating days */}
+          <div>
+            <FieldLabel required>Available Days</FieldLabel>
+            <div className="flex gap-1.5 flex-wrap mt-1">
+              {DAY_NAMES_SHORT.map((name, i) => {
+                const day    = i as RecurringDay;
+                const active = schedOpDays.includes(day);
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => setSchedOpDays(prev =>
+                      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort() as RecurringDay[]
+                    )}
+                    className={cn(
+                      "w-10 h-10 rounded-xl text-xs font-bold transition-all",
+                      active ? cn(cfg.activeBg, cfg.activeTxt) : "bg-stone-100 dark:bg-[#252837] text-stone-400 dark:text-stone-500 hover:bg-stone-200 dark:hover:bg-[#2a2d3e]"
+                    )}
+                  >
+                    {name.slice(0, 2)}
+                  </button>
+                );
+              })}
+            </div>
+            <FieldHint>Select the days of the week you are available for bookings.</FieldHint>
+          </div>
+
+          {/* Operating hours */}
+          <div>
+            <FieldLabel required>Operating Hours</FieldLabel>
+            <div className="grid grid-cols-2 gap-3 mt-1">
+              {(["Start", "End"] as const).map((label) => {
+                const val    = label === "Start" ? schedStart : schedEnd;
+                const setter = label === "Start" ? setSchedStart : setSchedEnd;
+                return (
+                  <div key={label}>
+                    <p className="text-[11px] text-stone-400 dark:text-stone-500 mb-1">{label} time</p>
+                    <div className={cn(
+                      "flex items-center gap-2 rounded-xl px-3 py-2.5 border transition-colors",
+                      "bg-stone-50 dark:bg-[#13151f] border-stone-200 dark:border-[#2a2d3e]"
+                    )}>
+                      <Clock className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500" />
+                      <input
+                        type="time"
+                        value={val}
+                        onChange={e => setter(e.target.value)}
+                        className="text-sm text-stone-800 dark:text-stone-100 bg-transparent outline-none flex-1"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Advance booking */}
+          <div>
+            <FieldLabel>Advance Booking Window</FieldLabel>
+            <div className="flex items-center gap-3 mt-1">
+              <input
+                type="range" min={7} max={90} step={1}
+                value={schedAdvance}
+                onChange={e => setSchedAdvance(Number(e.target.value))}
+                className="flex-1 accent-amber-500"
+              />
+              <span className="text-sm font-bold text-stone-800 dark:text-stone-100 w-20 text-right">
+                {schedAdvance} days
+              </span>
+            </div>
+            <FieldHint>Buyers can book up to {schedAdvance} days in advance. Minimum 7 days recommended.</FieldHint>
+          </div>
+
+          {/* Preview */}
+          <div className={cn("rounded-xl p-4 border", cfg.accentBg, cfg.accentBorder)}>
+            <div className="flex items-start gap-2.5">
+              <CalendarDays className={cn("w-4 h-4 shrink-0 mt-0.5", cfg.accentCls)} />
+              <div>
+                <p className={cn("text-xs font-bold mb-1", cfg.accentCls)}>Schedule Preview</p>
+                <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
+                  Available {schedOpDays.map(d => DAY_NAMES_SHORT[d]).join(", ")} · {schedStart}–{schedEnd} · Up to {schedAdvance} days ahead
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Section>
+    </>
+  );
+
+  // ── Step 3 — Location & Photos ───────────────────────────────────────────────
   const renderS2 = () => (
     <>
       <Section title="Pickup / Service Location">
@@ -1304,7 +1405,8 @@ export default function ListingForm({ type, initialData, isEdit = false, listing
           <div className="flex flex-col gap-4">
             {step === 0 && renderS0()}
             {step === 1 && renderS1()}
-            {step === 2 && renderS2()}
+            {(type === "rent" || type === "service") && step === 2 && renderS2Schedule()}
+            {(type === "sell" ? step === 2 : step === 3) && renderS2()}
           </div>
 
           <ErrMsg msg={errors.submit} />
@@ -1323,7 +1425,7 @@ export default function ListingForm({ type, initialData, isEdit = false, listing
               </button>
             )}
 
-            {step < 2 ? (
+            {step < (type === "sell" ? 2 : 3) ? (
               <button type="button" onClick={next}
                 className={cn("flex items-center gap-1.5 px-6 py-2.5 rounded-full text-sm font-bold transition-all", cfg.btnCls)}>
                 Continue <ChevronRight size={15} />
