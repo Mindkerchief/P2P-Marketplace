@@ -45,8 +45,16 @@ export function LoginForm() {
       const data = await sendPostRequest("/auth/login", { ...form, ipAddress, userAgent }, true);
       console.log("Logged in user:", data.user);
       saveUserData(data.user);
-      router.push("/");
+
+      // Role-based redirect
+      const role = data.user?.role;
+      if (role === "SUPER_ADMIN" || role === "ADMIN") router.push("/admin");
+      else router.push("/");
+
     } catch (error: any) {
+      if (error === "Failed to fetch") {
+        error = "Login failed. Please contact support.";
+      }
       toast.error(error, { position: "top-center" });
     } finally {
       setLoading(false);

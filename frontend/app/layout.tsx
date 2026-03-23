@@ -2,11 +2,16 @@ import type { Metadata } from "next";
 import { DM_Sans, Geist_Mono, Inter } from "next/font/google";
 import { UserProvider } from "@/utils/UserContext";
 import { ThemeProvider } from "next-themes";
+<<<<<<< HEAD
 import { NotificationProvider } from "@/utils/NotificationContext";
 import { ReviewProvider } from "@/utils/ReviewContext";
 import { Toaster } from "@/components/ui/sonner";
 import Navbar from "../components/navbar";
 import Footer from "../components/footer";
+=======
+import { Toaster } from "@/components/ui/sonner"
+import AppChrome from "@/components/app-chrome";
+>>>>>>> 41c0910dfbfac80aa9977c699016dcddccc6088e
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -37,6 +42,7 @@ export default function RootLayout({ children }:
       <body className={`${inter.variable} ${dmSans.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <UserProvider>
+<<<<<<< HEAD
             <NotificationProvider>
               <ReviewProvider>
                 <Navbar />
@@ -45,6 +51,12 @@ export default function RootLayout({ children }:
                 <Footer />
               </ReviewProvider>
             </NotificationProvider>
+=======
+            <AppChrome slot="top" />
+            {children}
+            <Toaster />
+            <AppChrome slot="bottom" />
+>>>>>>> 41c0910dfbfac80aa9977c699016dcddccc6088e
           </UserProvider>
         </ThemeProvider>
       </body>

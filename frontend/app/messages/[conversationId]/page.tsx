@@ -454,11 +454,30 @@ export default function ConversationPage() {
       });
     };
 
+    const onRealtimeListingStatus = (evt: Event) => {
+      const custom = evt as CustomEvent<{ listingId?: string; status?: string }>;
+      const listingId = (custom.detail?.listingId ?? "").trim();
+      const status = (custom.detail?.status ?? "").trim().toUpperCase();
+      if (!listingId || !status) return;
+
+      setConversation((prev) => {
+        if (!prev || prev.listing.id !== listingId) return prev;
+        return {
+          ...prev,
+          listing: {
+            ...prev.listing,
+            status,
+          },
+        };
+      });
+    };
+
     window.addEventListener("realtime:reaction", onRealtimeReaction as EventListener);
     window.addEventListener("realtime:status", onRealtimeStatus as EventListener);
     window.addEventListener("realtime:read", onRealtimeRead as EventListener);
     window.addEventListener("realtime:message-edit", onRealtimeMessageEdit as EventListener);
     window.addEventListener("realtime:message-unsend", onRealtimeMessageUnsend as EventListener);
+    window.addEventListener("realtime:listing-status", onRealtimeListingStatus as EventListener);
 
     return () => {
       window.removeEventListener("realtime:reaction", onRealtimeReaction as EventListener);
@@ -466,6 +485,7 @@ export default function ConversationPage() {
       window.removeEventListener("realtime:read", onRealtimeRead as EventListener);
       window.removeEventListener("realtime:message-edit", onRealtimeMessageEdit as EventListener);
       window.removeEventListener("realtime:message-unsend", onRealtimeMessageUnsend as EventListener);
+      window.removeEventListener("realtime:listing-status", onRealtimeListingStatus as EventListener);
     };
   }, [conversationId, effectiveCurrentUserId, isDraftConversation]);
 
@@ -619,6 +639,19 @@ export default function ConversationPage() {
     }
   };
 
+  const handleMarkedSold = () => {
+    setConversation((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        listing: {
+          ...prev.listing,
+          status: "SOLD",
+        },
+      };
+    });
+  };
+
   // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
     return <ConversationSkeleton />;
@@ -641,8 +674,8 @@ export default function ConversationPage() {
     <>
       <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-[#0f1117]">
 
-        <ChatHeader conversation={conversation} onDelete={handleDeleteConversation} />
-        <ListingContextCard listing={conversation.listing} />
+        <ChatHeader conversation={conversation} onDelete={handleDeleteConversation} onMarkedSold={handleMarkedSold} />
+        <ListingContextCard listing={conversation.listing} isSeller={conversation.isSeller} onMarkedSold={handleMarkedSold} />
 
         {/* Order / transaction status panel */}
         <OrderStatusPanel
