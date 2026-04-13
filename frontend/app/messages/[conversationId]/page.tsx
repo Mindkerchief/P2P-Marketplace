@@ -2,16 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import Lightbox from "yet-another-react-lightbox";
-import Thumbnails from "yet-another-react-lightbox/plugins/thumbnails";
-import Zoom from "yet-another-react-lightbox/plugins/zoom";
-import Video from "yet-another-react-lightbox/plugins/video";
-import "yet-another-react-lightbox/styles.css";
-import "yet-another-react-lightbox/plugins/thumbnails.css";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner"
 import type { PostCardProps } from "@/components/post-card";
 import type { Conversation, Message, MessageAttachment, ReactionType, ReplyPreview } from "@/types/messaging";
+import { MediaViewerModal } from "@/components/media-viewer-modal";
 import { getListingDetailById } from "@/services/listingDetailService";
 import {
   getConversations,
@@ -26,11 +21,13 @@ import {
   openOrCreateConversationFromListing,
 } from "@/services/messagingService";
 import { useUser } from "@/utils/UserContext";
-import ChatHeader         from "@/components/messages/chat-header";
-import ListingContextCard from "@/components/messages/listing-context-card";
 import MessageBubble      from "@/components/messages/message-bubble";
+<<<<<<< HEAD
 import MessageInput       from "@/components/messages/message-input";
 import OrderStatusPanel   from "@/components/messages/OrderStatusPanel";
+=======
+import { useMessageShell } from "@/components/messages/message-shell-context";
+>>>>>>> 0aa9d209a90512ff389a93e9fdf7c8bce7b66fb7
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -45,6 +42,20 @@ function formatDateSeparator(iso: string): string {
 
 function isSameDay(a: string, b: string) {
   return new Date(a).toDateString() === new Date(b).toDateString();
+}
+
+function getSystemActionLabel(content?: string): string | null {
+  const raw = String(content ?? "").trim();
+  const actionPrefixes = ["__OFFER_ACTION__:", "__DEAL_ACTION__:", "__SCHEDULE_ACTION__:", "__SOLD_ACTION__:"];
+  const matchedPrefix = actionPrefixes.find((prefix) => raw.startsWith(prefix));
+  if (!matchedPrefix) {
+    return null;
+  }
+  const actionText = raw.replace(matchedPrefix, "").trim();
+  if (!actionText) {
+    return null;
+  }
+  return actionText;
 }
 
 const DRAFT_CONVERSATION_ID = "new";
@@ -162,95 +173,6 @@ function EditModal({
   );
 }
 
-function MediaViewerModal({
-  mediaItems,
-  activeIndex,
-  onSelect,
-  onClose,
-}: {
-  mediaItems: MessageAttachment[];
-  activeIndex: number;
-  onSelect: (index: number) => void;
-  onClose: () => void;
-}) {
-  const slides = mediaItems.map((item) => {
-    if (item.fileType === "VIDEO") {
-      return {
-        type: "video" as const,
-        sources: [{ src: item.fileUrl, type: "video/mp4" }],
-        poster: item.fileUrl,
-      };
-    }
-
-    return {
-      src: item.fileUrl,
-      alt: item.fileName ?? "media",
-    };
-  });
-
-  return (
-    <Lightbox
-      open={activeIndex >= 0}
-      close={onClose}
-      index={activeIndex}
-      slides={slides}
-      plugins={[Zoom, Thumbnails, Video]}
-      on={{
-        view: ({ index }) => onSelect(index),
-      }}
-      zoom={{
-        maxZoomPixelRatio: 4,
-        zoomInMultiplier: 2,
-        doubleTapDelay: 250,
-      }}
-      thumbnails={{
-        position: "bottom",
-        width: 72,
-        height: 72,
-        border: 1,
-        borderRadius: 8,
-        gap: 8,
-      }}
-      carousel={{
-        finite: false,
-      }}
-      controller={{
-        closeOnBackdropClick: true,
-      }}
-    />
-  );
-}
-
-function ConversationSkeleton() {
-  return (
-    <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-[#0f1117] animate-pulse">
-      <div className="h-14 shrink-0 border-b border-border bg-white dark:bg-[#1c1f2e] px-4 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-stone-200 dark:bg-[#252837]" />
-        <div className="h-3 w-40 rounded bg-stone-200 dark:bg-[#252837]" />
-      </div>
-
-      <div className="h-16 shrink-0 border-b border-border px-4 py-3 bg-stone-50 dark:bg-[#13151f]">
-        <div className="h-3 w-56 rounded bg-stone-200 dark:bg-[#252837] mb-2" />
-        <div className="h-2.5 w-36 rounded bg-stone-200 dark:bg-[#252837]" />
-      </div>
-
-      <div className="flex-1 overflow-hidden px-4 py-3">
-        <div className="flex flex-col gap-3">
-          <div className="self-start h-14 w-[60%] rounded-2xl bg-stone-200 dark:bg-[#252837]" />
-          <div className="self-end h-14 w-[48%] rounded-2xl bg-stone-200 dark:bg-[#252837]" />
-          <div className="self-start h-20 w-[68%] rounded-2xl bg-stone-200 dark:bg-[#252837]" />
-          <div className="self-end h-12 w-[42%] rounded-2xl bg-stone-200 dark:bg-[#252837]" />
-        </div>
-      </div>
-
-      <div className="h-20 shrink-0 border-t border-border bg-white dark:bg-[#1c1f2e] px-3 py-2.5">
-        <div className="h-full rounded-2xl bg-stone-200 dark:bg-[#252837]" />
-      </div>
-      <div className="h-14 md:h-0 shrink-0" />
-    </div>
-  );
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ConversationPage() {
@@ -258,6 +180,7 @@ export default function ConversationPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useUser();
+  const { setShellState } = useMessageShell();
   const currentUserId = user?.userId ?? "";
 
   const conversationId =
@@ -265,6 +188,7 @@ export default function ConversationPage() {
   const isDraftConversation = conversationId === DRAFT_CONVERSATION_ID;
   const draftListingId = (searchParams.get("listingId") ?? "").trim();
 
+  const [showSkeleton, setShowSkeleton] = useState(false);
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages,     setMessages]     = useState<Message[]>([]);
   const [loading,      setLoading]      = useState(true);
@@ -278,11 +202,10 @@ export default function ConversationPage() {
   const [mediaViewerIndex, setMediaViewerIndex] = useState<number | null>(null);
   const [animatedReadMarkerId, setAnimatedReadMarkerId] = useState<string | null>(null);
 
-  const bottomRef = useRef<HTMLDivElement>(null);
-
   const load = useCallback(async () => {
     if (!conversationId) return;
     setLoading(true);
+    setMessages([]);
     try {
       if (isDraftConversation) {
         if (!draftListingId) {
@@ -321,9 +244,20 @@ export default function ConversationPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Delay skeleton so fast loads do not flicker.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    let timer: NodeJS.Timeout;
+    
+    if (loading) {
+      // If loading is still in progress after 500ms, show skeleton.
+      timer = setTimeout(() => setShowSkeleton(true), 250);
+    } else {
+      // Loading completed before/after threshold; hide skeleton.
+      setShowSkeleton(false);
+    }
+
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   const effectiveCurrentUserId = useMemo(() => {
     if (currentUserId) return currentUserId;
@@ -472,12 +406,28 @@ export default function ConversationPage() {
       });
     };
 
+    const onRealtimeDealUpdated = async (evt: Event) => {
+      const custom = evt as CustomEvent<{ conversationId?: string }>;
+      if (custom.detail?.conversationId !== conversationId) return;
+
+      const [freshConversation, freshMessages] = await Promise.all([
+        getConversation(conversationId),
+        getMessages(conversationId),
+      ]);
+
+      if (freshConversation) {
+        setConversation(freshConversation);
+      }
+      setMessages(freshMessages);
+    };
+
     window.addEventListener("realtime:reaction", onRealtimeReaction as EventListener);
     window.addEventListener("realtime:status", onRealtimeStatus as EventListener);
     window.addEventListener("realtime:read", onRealtimeRead as EventListener);
     window.addEventListener("realtime:message-edit", onRealtimeMessageEdit as EventListener);
     window.addEventListener("realtime:message-unsend", onRealtimeMessageUnsend as EventListener);
     window.addEventListener("realtime:listing-status", onRealtimeListingStatus as EventListener);
+    window.addEventListener("realtime:deal-updated", onRealtimeDealUpdated as EventListener);
 
     return () => {
       window.removeEventListener("realtime:reaction", onRealtimeReaction as EventListener);
@@ -486,6 +436,7 @@ export default function ConversationPage() {
       window.removeEventListener("realtime:message-edit", onRealtimeMessageEdit as EventListener);
       window.removeEventListener("realtime:message-unsend", onRealtimeMessageUnsend as EventListener);
       window.removeEventListener("realtime:listing-status", onRealtimeListingStatus as EventListener);
+      window.removeEventListener("realtime:deal-updated", onRealtimeDealUpdated as EventListener);
     };
   }, [conversationId, effectiveCurrentUserId, isDraftConversation]);
 
@@ -531,8 +482,11 @@ export default function ConversationPage() {
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
-  const handleSend = async (content: string, attachments: Array<{ name: string; mimeType: string; data: string }>) => {
+  const handleSend = useCallback(async (content: string, attachments: Array<{ name: string; mimeType: string; data: string }>) => {
     if (sending) return;
+    if (conversation?.canSendMessage === false) {
+      throw new Error("Recipient is unavailable.");
+    }
     setSending(true);
     try {
       let targetConversationId = conversationId;
@@ -559,7 +513,7 @@ export default function ConversationPage() {
     } finally {
       setSending(false);
     }
-  };
+  }, [sending, conversation, conversationId, isDraftConversation, draftListingId, replyTo, router]);
 
   const handleReply = (msg: Message) => {
     const senderName =
@@ -621,7 +575,7 @@ export default function ConversationPage() {
     }
   };
 
-  const handleDeleteConversation = async () => {
+  const handleDeleteConversation = useCallback(async () => {
     if (isDraftConversation) {
       router.push("/messages");
       return;
@@ -630,7 +584,7 @@ export default function ConversationPage() {
     await deleteConversation(conversationId);
     toast.success("Conversation deleted", { position: "top-center" });
     router.push("/messages");
-  };
+  }, [conversationId, isDraftConversation, router]);
 
   const handleOpenMediaViewer = (attachmentId: string) => {
     const idx = mediaItems.findIndex((item) => item.id === attachmentId);
@@ -639,25 +593,89 @@ export default function ConversationPage() {
     }
   };
 
-  const handleMarkedSold = () => {
-    setConversation((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        listing: {
-          ...prev.listing,
-          status: "SOLD",
-        },
-      };
-    });
-  };
+  const handleOfferUpdated = useCallback(async () => {
+    if (isDraftConversation || !conversationId) return;
 
-  // ── Loading ───────────────────────────────────────────────────────────────
-  if (loading) {
-    return <ConversationSkeleton />;
-  }
+    const [freshConversation, freshMessages] = await Promise.all([
+      getConversation(conversationId),
+      getMessages(conversationId),
+    ]);
+
+    if (freshConversation) {
+      setConversation(freshConversation);
+    }
+    setMessages(freshMessages);
+    await markConversationRead(conversationId);
+  }, [conversationId, isDraftConversation]);
+
+  const handleMarkedComplete = useCallback(async () => {
+    await handleOfferUpdated();
+  }, [handleOfferUpdated]);
+
+  const handleCancelReply = useCallback(() => {
+    setReplyTo(null);
+  }, []);
+
+  useEffect(() => {
+    if (conversation) {
+      setShellState((prev) => ({
+        ...prev,
+        conversation,
+      }));
+      return;
+    }
+
+    if (!loading) {
+      setShellState((prev) => ({
+        ...prev,
+        conversation: null,
+      }));
+    }
+  }, [conversation, loading, setShellState]);
+
+  useEffect(() => {
+    setShellState((prev) => ({
+      ...prev,
+      onDelete: handleDeleteConversation,
+      onMarkedComplete: handleMarkedComplete,
+      onOfferUpdated: handleOfferUpdated,
+      onSend: handleSend,
+      inputDisabled: loading || sending || !conversation || conversation.canSendMessage === false,
+      replyTo,
+      onCancelReply: handleCancelReply,
+    }));
+  }, [conversation, handleCancelReply, handleDeleteConversation, handleMarkedComplete, handleOfferUpdated, handleSend, loading, replyTo, sending, setShellState]);
+
+  useEffect(() => {
+    return () => {
+      setShellState((prev) => ({
+        ...prev,
+        onDelete: undefined,
+        onMarkedComplete: undefined,
+        onOfferUpdated: undefined,
+        inputDisabled: true,
+        replyTo: null,
+        onCancelReply: undefined,
+      }));
+    };
+  }, [setShellState]);
 
   if (!conversation) {
+    if (loading) {
+      if (!showSkeleton) {
+        return <div className="h-full" />;
+      }
+
+      return (
+        <div className="h-full overflow-y-auto no-scroll px-4 pt-24 pb-3 flex flex-col-reverse gap-4 fade-in duration-100">
+          <div className="h-12 bg-stone-200 dark:bg-[#1f2230] rounded-lg w-2/3 ml-auto" />
+          <div className="h-16 bg-stone-200 dark:bg-[#1f2230] rounded-lg w-1/2" />
+          <div className="h-12 bg-stone-200 dark:bg-[#1f2230] rounded-lg w-3/4 ml-auto" />
+          <div className="h-20 bg-stone-200 dark:bg-[#1f2230] rounded-lg w-2/3" />
+        </div>
+      );
+    }
+
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3 bg-stone-50 dark:bg-[#0f1117] p-8 text-center">
         <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Conversation not found</p>
@@ -672,11 +690,24 @@ export default function ConversationPage() {
 
   return (
     <>
-      <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-[#0f1117]">
+      {showSkeleton && (
+        <div className="h-full overflow-y-auto no-scroll px-4 pt-24 pb-3 flex flex-col-reverse gap-4 fade-in duration-100">
+          <div className="h-12 bg-stone-200 dark:bg-[#1f2230] rounded-lg w-2/3 ml-auto" />
+          <div className="h-16 bg-stone-200 dark:bg-[#1f2230] rounded-lg w-1/2" />
+          <div className="h-12 bg-stone-200 dark:bg-[#1f2230] rounded-lg w-3/4 ml-auto" />
+          <div className="h-20 bg-stone-200 dark:bg-[#1f2230] rounded-lg w-2/3" />
+        </div>
+      )}
 
-        <ChatHeader conversation={conversation} onDelete={handleDeleteConversation} onMarkedSold={handleMarkedSold} />
-        <ListingContextCard listing={conversation.listing} isSeller={conversation.isSeller} onMarkedSold={handleMarkedSold} />
+      {!loading && (
+        <div key={conversationId} className="h-full overflow-y-auto no-scroll px-4 pt-24 pb-3 flex flex-col-reverse animate-in fade-in duration-500">
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center gap-2 text-center h-full my-auto">
+              <p className="text-xs text-stone-400 dark:text-stone-600">No messages yet. Say hello!</p>
+            </div>
+          )}
 
+<<<<<<< HEAD
         {/* Order / transaction status panel */}
         <OrderStatusPanel
           conversationId={conversationId}
@@ -695,27 +726,39 @@ export default function ConversationPage() {
                 <p className="text-xs text-stone-400 dark:text-stone-600">No messages yet. Say hello!</p>
               </div>
             )}
+=======
+          {[...messages].reverse().map((msg, reversedIndex) => {
+            const originalIndex = messages.length - 1 - reversedIndex;
+            const prev = messages[originalIndex - 1];
+            const next = messages[originalIndex + 1];
+            const actionLabel = getSystemActionLabel(msg.content);
+>>>>>>> 0aa9d209a90512ff389a93e9fdf7c8bce7b66fb7
 
-            {messages.map((msg, i) => {
-              const prev     = messages[i - 1];
-              const next     = messages[i + 1];
-              const showDate = !prev || !isSameDay(prev.createdAt, msg.createdAt);
-              const showTime =
-                !next ||
-                next.senderId !== msg.senderId ||
-                new Date(next.createdAt).getTime() - new Date(msg.createdAt).getTime() > 60_000;
+            const showDate = !prev || !isSameDay(prev.createdAt, msg.createdAt);
+            const showTime =
+              !next ||
+              next.senderId !== msg.senderId ||
+              new Date(next.createdAt).getTime() - new Date(msg.createdAt).getTime() > 60_000;
 
-              return (
-                <div key={msg.id}>
-                  {showDate && (
-                    <div className="flex items-center gap-3 my-4">
-                      <div className="flex-1 h-px bg-border" />
-                      <span className="text-[11px] font-medium text-stone-400 dark:text-stone-500 px-2">
-                        {formatDateSeparator(msg.createdAt)}
-                      </span>
-                      <div className="flex-1 h-px bg-border" />
-                    </div>
-                  )}
+            return (
+              <div key={msg.id}>
+                {showDate && (
+                  <div className="flex items-center gap-3 my-4">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[11px] font-medium text-stone-400 dark:text-stone-500 px-2">
+                      {formatDateSeparator(msg.createdAt)}
+                    </span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                )}
+
+                {actionLabel ? (
+                  <div className="flex justify-center my-1.5">
+                    <span className="text-[11px] text-stone-400 dark:text-stone-500 bg-stone-100 dark:bg-[#1c1f2e] border border-border rounded-full px-3 py-1">
+                      {actionLabel}
+                    </span>
+                  </div>
+                ) : (
                   <MessageBubble
                     message={msg}
                     currentUserId={effectiveCurrentUserId}
@@ -727,48 +770,36 @@ export default function ConversationPage() {
                     onDelete={handleDelete}
                     onOpenMediaViewer={handleOpenMediaViewer}
                   />
+                )}
 
-                  {msg.senderId === effectiveCurrentUserId && conversation.otherLastReadMessageId === msg.id && (
-                    <div className="flex justify-end pr-1 mt-0.5">
-                      {conversation.otherParticipant.profileImageUrl ? (
-                        <img
-                          src={conversation.otherParticipant.profileImageUrl}
-                          alt={`${conversation.otherParticipant.firstName} read receipt`}
-                          className={cn(
-                            "w-3.5 h-3.5 rounded-full object-cover border border-border",
-                            animatedReadMarkerId === msg.id && "animate-read-drop"
-                          )}
-                        />
-                      ) : (
-                        <span
-                          className={cn(
-                            "w-3.5 h-3.5 rounded-full border border-border bg-stone-200 dark:bg-stone-700 text-[8px] font-bold text-stone-700 dark:text-stone-100 inline-flex items-center justify-center",
-                            animatedReadMarkerId === msg.id && "animate-read-drop"
-                          )}
-                        >
-                          {conversation.otherParticipant.firstName.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            <div ref={bottomRef} />
-          </div>
+                {!actionLabel && msg.senderId === effectiveCurrentUserId && conversation.otherLastReadMessageId === msg.id && (
+                  <div className="flex justify-end pr-1 mt-0.5">
+                    {conversation.otherParticipant.profileImageUrl ? (
+                      <img
+                        src={conversation.otherParticipant.profileImageUrl}
+                        alt={`${conversation.otherParticipant.firstName} read receipt`}
+                        className={cn(
+                          "w-3.5 h-3.5 rounded-full object-cover border border-border",
+                          animatedReadMarkerId === msg.id && "animate-read-drop"
+                        )}
+                      />
+                    ) : (
+                      <span
+                        className={cn(
+                          "w-3.5 h-3.5 rounded-full border border-border bg-stone-200 dark:bg-stone-700 text-[8px] font-bold text-stone-700 dark:text-stone-100 inline-flex items-center justify-center",
+                          animatedReadMarkerId === msg.id && "animate-read-drop"
+                        )}
+                      >
+                        {conversation.otherParticipant.firstName.charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-
-        <MessageInput
-          onSend={handleSend}
-          disabled={sending}
-          replyTo={replyTo}
-          onCancelReply={() => setReplyTo(null)}
-        />
-
-        {/* Mobile nav spacer */}
-        <div className="h-14 md:h-0 shrink-0" />
-      </div>
+      )}
 
       {/* Edit modal */}
       {editTarget && (

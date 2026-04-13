@@ -1,28 +1,36 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import {
   MapPin, Star, MessageCircle, Bookmark, Share2,
   ChevronLeft, ChevronRight, Flag, Eye, Clock, Package,
-  CheckCircle, Phone, Zap, ArrowLeft, Truck, CalendarDays,
+  CheckCircle, Phone, Zap, ArrowLeft, Truck, AlertTriangle, Expand
 } from "lucide-react";
 import { useUser } from "@/utils/UserContext";
-import { addListingBookmark, getListingDetailById, removeListingBookmark, submitListingReport } from "@/services/listingDetailService";
+import { addListingBookmark, deleteListing, getListingDetailById, removeListingBookmark, submitListingReport, toggleListingVisibility } from "@/services/listingDetailService";
 import { getUserProfileData } from "@/services/profileService";
-import { type PostCardProps } from "@/components/post-card";
+import PostCard, { type PostCardProps } from "@/components/post-card";
 import ListingTypeBadge from "@/components/listing-type-badge";
 import ListingConditionBadge from "@/components/listing-condition-badge";
 import VerificationBadge from "@/components/verification-badge";
 import { LoadingPage } from "@/components/loading";
-import { RequestToRentModal, BookServiceModal } from "@/components/request-modals";
+import { ScheduleModal } from "@/components/schedule-modal";
 import { ReportModal } from "@/components/report-modal";
+<<<<<<< HEAD
 import ScheduleManager from "@/components/schedule-manager";
 import { useSchedule } from "@/utils/ScheduleContext";
+=======
+import OfferModal from "@/components/offer-modal";
+import { openOrCreateConversationFromListing } from "@/services/messagingService";
+>>>>>>> 0aa9d209a90512ff389a93e9fdf7c8bce7b66fb7
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { SafeImage } from "@/components/ui/safe-image";
+import { ImageLink } from "@/components/image-link";
+import { formatPrice, formatTimeAgo } from "@/utils/string-builder";
+import { MediaViewerModal, type MediaViewerItem } from "@/components/media-viewer-modal";
 
 // ── ExtraDetail — mirrors every field the listing form collects ────────────────
 interface ExtraDetail {
@@ -30,18 +38,22 @@ interface ExtraDetail {
   condition:      string;       // sell only — "Brand New"|"Like New"|"Good"|"Fair"|"For Parts"
   images:         string[];
   features:       string[];     // highlights (up to 8 keywords)
-  views:          number;
-  offers:         number;
+  transactionCount: number;
+  reviewCount:    number;
   // Common
   deliveryMethod: string;       // from form's deliveryMethod field
   // Rent-specific
   minPeriod?:     string;
+  available_from?: string;
   availability?:  string;
   deposit?:       string;
   amenities?:     string[];
+  daysOff?:       string[];
+  timeWindows?:   { startTime: string; endTime: string }[];
   // Service-specific
   turnaround?:    string;
   serviceArea?:   string;
+  arrangement?:   string;
   inclusions?:    string[];
 }
 
@@ -51,14 +63,14 @@ function getDefaultExtra(listing: PostCardProps): ExtraDetail {
     condition:      listing.type === "sell" ? "Good" : "",
     images:         [listing.imageUrl, listing.imageUrl, listing.imageUrl],
     features:       [],
-    views:          Math.floor(Math.random() * 200) + 20,
-    offers:         Math.floor(Math.random() * 10),
+    transactionCount: 0,
+    reviewCount:    0,
     deliveryMethod: listing.type === "service" ? "On-site service" : "Meet-up or Delivery",
+    daysOff:        [],
+    timeWindows:    [],
+    arrangement:    "",
   };
 }
-
-// ── Formatting ─────────────────────────────────────────────────────────────────
-const fmt = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", minimumFractionDigits: 0 });
 
 // ── Type badge — keys match PostCardProps.type ("sell" | "rent" | "service") ───
 // FIX: was keyed as "sale" which never matched the actual type value "sell"
@@ -67,43 +79,6 @@ const TYPE_LABEL: Record<string, string> = {
   rent:    "For Rent",
   service: "Service",
 };
-
-// ── Small related card ────────────────────────────────────────────────────────
-function RelatedCard({ listing }: { listing: PostCardProps }) {
-  return (
-    <Link href={`/listing/${listing.id}`} className="group block w-full">
-      <div className="bg-white dark:bg-[#1c1f2e] rounded-xl overflow-hidden border border-stone-200 dark:border-[#2a2d3e] hover:-translate-y-1 hover:shadow-md transition-all duration-200">
-        <div className="relative aspect-[4/3] overflow-hidden bg-stone-100 dark:bg-[#13151f]">
-          <Image
-            src={listing.imageUrl} alt={listing.title} fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-            sizes="160px"
-          />
-          <div className="absolute top-1.5 left-1.5">
-            <ListingTypeBadge
-              type={listing.type}
-              status={listing.status}
-              sellStatus={listing.sellStatus}
-              variant="solid"
-              className="text-[11px] font-bold"
-              soldClassName="text-[11px] font-bold"
-            />
-          </div>
-        </div>
-        <div className="p-2.5">
-          <p className="text-stone-800 dark:text-stone-100 font-semibold text-sm leading-tight line-clamp-2">{listing.title}</p>
-          <p className="text-stone-800 dark:text-stone-200 font-bold text-sm mt-1">
-            {fmt.format(listing.price)}
-            {listing.priceUnit && (
-              <span className="text-[11px] font-normal text-stone-400 dark:text-stone-500"> {listing.priceUnit}</span>
-            )}  
-          </p>
-          <p className="text-stone-400 dark:text-stone-500 text-[11px] mt-0.5 truncate">{listing.location}</p>
-        </div>
-      </div>
-    </Link>
-  );
-}
 
 // ── Rent info card — shows data from form's "Rental Terms" step ───────────────
 function RentInfoCard({ extra }: { extra: ExtraDetail }) {
@@ -114,20 +89,11 @@ function RentInfoCard({ extra }: { extra: ExtraDetail }) {
     <div className="bg-white dark:bg-[#1c1f2e] rounded-2xl border border-stone-200 dark:border-[#2a2d3e] shadow-sm p-6">
       <h2 className="font-bold text-stone-900 dark:text-stone-50 text-base mb-4">Rental Terms</h2>
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {extra.minPeriod && (
             <div className="bg-stone-50 dark:bg-[#13151f] rounded-xl p-3">
               <p className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-1">Min. Period</p>
               <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{extra.minPeriod}</p>
-            </div>
-          )}
-          {extra.availability && (
-            <div className="bg-stone-50 dark:bg-[#13151f] rounded-xl p-3">
-              <p className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-1">Available From</p>
-              <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-1.5">
-                <CalendarDays className="w-3.5 h-3.5 text-teal-500 flex-shrink-0" />
-                {extra.availability}
-              </p>
             </div>
           )}
           {extra.deposit && (
@@ -144,7 +110,7 @@ function RentInfoCard({ extra }: { extra: ExtraDetail }) {
             <div className="flex flex-wrap gap-1.5">
               {extra.amenities.map((a) => (
                 <span key={a} className="flex items-center gap-1 text-xs bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 px-2.5 py-1 rounded-full font-medium">
-                  <CheckCircle className="w-3 h-3 flex-shrink-0" /> {a}
+                  <CheckCircle className="w-3 h-3 shrink-0" /> {a}
                 </span>
               ))}
             </div>
@@ -170,7 +136,7 @@ function ServiceInfoCard({ extra }: { extra: ExtraDetail }) {
               <div className="bg-stone-50 dark:bg-[#13151f] rounded-xl p-3">
                 <p className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-1">Turnaround</p>
                 <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
+                  <Clock className="w-3.5 h-3.5 text-violet-500 shrink-0" />
                   {extra.turnaround}
                 </p>
               </div>
@@ -179,7 +145,7 @@ function ServiceInfoCard({ extra }: { extra: ExtraDetail }) {
               <div className="bg-stone-50 dark:bg-[#13151f] rounded-xl p-3">
                 <p className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-1">Service Area</p>
                 <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
+                  <MapPin className="w-3.5 h-3.5 text-violet-500 shrink-0" />
                   {extra.serviceArea}
                 </p>
               </div>
@@ -193,7 +159,7 @@ function ServiceInfoCard({ extra }: { extra: ExtraDetail }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6">
               {extra.inclusions.filter(Boolean).map((item) => (
                 <div key={item} className="flex items-start gap-2 text-sm text-stone-700 dark:text-stone-200">
-                  <CheckCircle className="w-4 h-4 text-violet-500 flex-shrink-0 mt-0.5" />
+                  <CheckCircle className="w-4 h-4 text-violet-500 shrink-0 mt-0.5" />
                   {item}
                 </div>
               ))}
@@ -221,17 +187,19 @@ export default function ListingDetailPage() {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [offerOpen,   setOfferOpen]  = useState(false);
   const [offerAmount, setOfferAmt]   = useState("");
-  const [offerSent,   setOfferSent]  = useState(false);
-  const [rentOpen,  setRentOpen]  = useState(false);
-  const [bookOpen,  setBookOpen]  = useState(false);
-          const [reportOpen,  setReportOpen] = useState(false);
+  const [offerMessage, setOfferMessage] = useState("");
+  const [submittingOffer, setSubmittingOffer] = useState(false);
+  const [scheduleOpen,  setScheduleOpen]  = useState(false);
+  const [reportOpen,  setReportOpen] = useState(false);
   const [submittingReport, setSubmittingReport] = useState(false);
   const [shownContactNumber, setShownContactNumber] = useState<string | null>(null);
   const [deleting,    setDeleting]   = useState(false);
+  const [toggling,    setToggling]   = useState(false);
   const [messaging,   setMessaging]  = useState(false);
   const { getSchedule } = useSchedule();
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [isFetchingContact, setIsFetchingContact] = useState(false);
+  const [mediaViewerIndex, setMediaViewerIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -265,6 +233,25 @@ export default function ListingDetailPage() {
     };
   }, [id]);
 
+  const galleryImageUrls = useMemo(() => {
+    const extraImages = extra.images.filter(Boolean);
+    if (extraImages.length > 0) {
+      return extraImages;
+    }
+
+    const primaryImage = (listing?.imageUrl ?? "").trim();
+    return primaryImage ? [primaryImage] : [];
+  }, [extra.images, listing?.imageUrl]);
+
+  const galleryMediaItems = useMemo<MediaViewerItem[]>(() => {
+    return galleryImageUrls.map((url, index) => ({
+      id: `gallery-${index}`,
+      fileUrl: url,
+      fileType: "IMAGE",
+      fileName: `Photo ${index + 1}`,
+    }));
+  }, [galleryImageUrls]);
+
   if (isLoading) {
     return (<LoadingPage />);
   }
@@ -287,9 +274,19 @@ export default function ListingDetailPage() {
   const isService    = listing.type === "service";
   const listingStatus = (listing.status ?? "").trim().toLowerCase();
   const listingSellStatus = (listing.sellStatus ?? "").trim().toLowerCase();
+  const isUnavailableState = listingStatus === "unavailable";
+  const isBannedState = listingStatus === "banned";
+  const isDeletedState = listingStatus === "deleted";
+  const isSellerInactiveState = listing.seller.isActive === false;
+  const visitorUnavailableState = isUnavailableState || isBannedState || isDeletedState || isSellerInactiveState;
   const isSold = isSell && (listingStatus === "sold" || listingSellStatus === "sold");
+<<<<<<< HEAD
   const listingSchedule = (isRent || isService) ? getSchedule(listing.id) : null;
   const images       = extra.images.filter(Boolean);
+=======
+  const isListingAvailable = listingStatus === "available";
+  const images       = galleryImageUrls;
+>>>>>>> 0aa9d209a90512ff389a93e9fdf7c8bce7b66fb7
   const sellerRating = Number.isFinite(listing.seller.rating) ? Number(listing.seller.rating) : 0;
   const hasSellerRating = sellerRating > 0;
   const sellerProfileHref = isOwnListing
@@ -417,14 +414,66 @@ export default function ListingDetailPage() {
 
   function handleBuy() {
     if (!isAuth) { router.push("/login"); return; }
-    if (isRent)    { setRentOpen(true);  return; }
-    if (isService) { setBookOpen(true);  return; }
+    if (isRent)    { setScheduleOpen(true);  return; }
+    if (isService) { setScheduleOpen(true);  return; }
     setOfferOpen(true); // sell — unchanged
   }
 
-  function sendOffer() {
-    setOfferSent(true);
-    setTimeout(() => { setOfferOpen(false); setOfferSent(false); }, 2000);
+  async function sendOffer() {
+    if (!listing || submittingOffer) return;
+    if (!isAuth) {
+      router.push("/login");
+      return; 
+    }
+
+    const parsedOffer = Number.parseInt(String(offerAmount), 10);
+    if (!Number.isFinite(parsedOffer) || parsedOffer <= 0) {
+      toast.error("Please enter a valid offer amount.", { position: "top-center" });
+      return;
+    }
+
+    setSubmittingOffer(true);
+    try {
+      const conversationId = await openOrCreateConversationFromListing(listing.id, parsedOffer, offerMessage);
+      setOfferMessage("");
+      setOfferOpen(false);
+      router.push(`/messages/${conversationId}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to send offer.";
+      toast.error(message, { position: "top-center" });
+    } finally {
+      setSubmittingOffer(false);
+    }
+  }
+
+  async function sendSchedule(payload: {
+    startDate: string;
+    endDate: string;
+    startTime: string;
+    endTime: string;
+    message: string;
+  }) {
+    if (!listing) return;
+    if (!isAuth) {
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const conversationId = await openOrCreateConversationFromListing(listing.id, undefined, undefined, {
+        startDate: payload.startDate,
+        endDate: payload.endDate,
+        startTime: payload.startTime,
+        endTime: payload.endTime,
+        message: payload.message,
+      });
+      setScheduleOpen(false);
+      router.push(`/messages/${conversationId}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to request schedule.";
+      toast.error(message, { position: "top-center" });
+      throw err;
+    }
   }
 
   async function handleRemoveListing() {
@@ -439,16 +488,7 @@ export default function ListingDetailPage() {
 
     setDeleting(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/listing/${id}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-
-      const parsedJson = await response.json();
-      if (!response.ok) {
-        throw new Error(parsedJson?.data?.message || "Failed to remove listing.");
-      }
+      await deleteListing(id);
 
       router.push("/profile");
     } catch (err) {
@@ -459,11 +499,43 @@ export default function ListingDetailPage() {
     }
   }
 
+  async function handleListingVisibility() {
+  if (!isAuth) {
+    router.push("/login");
+    return;
+  }
+  if (!isOwnListing || toggling) return;
+
+  const confirmed = window.confirm(`Are you sure you want to ${isListingAvailable ? "hide" : "show"} this listing?`);
+  if (!confirmed) return;
+
+  setToggling(true);
+  try {
+    const response = await toggleListingVisibility(id);
+    const nextStatus = response.status.toLowerCase();
+
+    setListing((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        status: nextStatus,
+      };
+    });
+
+    toast.success(nextStatus === "available" ? "Listing is now visible." : "Listing is now hidden.", { position: "top-center" });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to update listing visibility.";
+    toast.error(message, { position: "top-center" });
+  } finally {
+    setToggling(false);
+  }
+  }
+
   return (
     <div className="min-h-screen bg-stone-100 dark:bg-[#0f1117]">
 
       {/* ── Breadcrumb ── */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 pb-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-3">
         <div className="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
           <Link href="/" className="hover:text-stone-600 dark:hover:text-stone-300 transition-colors flex items-center gap-1">
             <ArrowLeft className="w-3 h-3" /> Home
@@ -478,11 +550,11 @@ export default function ListingDetailPage() {
           <span>/</span>
           <span className="capitalize text-stone-500 dark:text-stone-400">{listing.category}</span>
           <span>/</span>
-          <span className="text-stone-700 dark:text-stone-300 truncate max-w-[180px]">{listing.title}</span>
+          <span className="text-stone-700 dark:text-stone-300 truncate max-w-45">{listing.title}</span>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
 
           {/* ══ LEFT COLUMN ══════════════════════════════════════════════════ */}
@@ -490,13 +562,12 @@ export default function ListingDetailPage() {
 
             {/* ── Image gallery ── */}
             <div className="bg-white dark:bg-[#1c1f2e] rounded-2xl border border-stone-200 dark:border-[#2a2d3e] overflow-hidden shadow-sm">
-              <div className="relative aspect-[16/10] bg-stone-100 dark:bg-[#13151f] overflow-hidden group">
-                <Image
+              <div className="relative aspect-16/10 bg-stone-100 dark:bg-[#13151f] overflow-hidden group">
+                <SafeImage
                   src={images[imgIdx] ?? listing.imageUrl}
-                  alt={listing.title}
-                  fill className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 60vw"
-                  priority
+                  type="cover"
+                  alt={`Photo ${imgIdx + 1} of ${images.length}`}
+                  fill
                 />
 
                 {/* Type badge */}
@@ -546,6 +617,17 @@ export default function ListingDetailPage() {
                     ))}
                   </div>
                 )}
+
+                {/* Fullscreen gallery */}
+                {galleryMediaItems.length > 0 && (
+                  <button
+                    onClick={() => setMediaViewerIndex(Math.min(imgIdx, galleryMediaItems.length - 1))}
+                    className="absolute bottom-3 right-3 w-9 h-9 bg-black/55 rounded-full flex items-center justify-center text-white hover:bg-black/75 transition-colors"
+                    aria-label="Open fullscreen gallery"
+                  >
+                    <Expand className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
               {/* Thumbnails */}
@@ -554,10 +636,15 @@ export default function ListingDetailPage() {
                   {images.map((img, i) => (
                     <button key={i} onClick={() => setImgIdx(i)}
                       className={cn(
-                        "relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all",
+                        "relative shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all",
                         i === imgIdx ? "border-stone-800 dark:border-stone-300" : "border-transparent opacity-60 hover:opacity-100"
                       )}>
-                      <Image src={img} alt={`Photo ${i + 1}`} fill className="object-cover" sizes="64px" />
+                      <SafeImage
+                        src={img}
+                        type="thumbnail"
+                        alt={`Photo ${i + 1}`}
+                        fill
+                      />
                     </button>
                   ))}
                 </div>
@@ -576,7 +663,7 @@ export default function ListingDetailPage() {
                   <div className="grid grid-cols-2 gap-2">
                     {extra.features.map((f) => (
                       <div key={f} className="flex items-center gap-2 text-sm text-stone-700 dark:text-stone-200">
-                        <CheckCircle className="w-4 h-4 text-teal-500 flex-shrink-0" />
+                        <CheckCircle className="w-4 h-4 text-teal-500 shrink-0" />
                         {f}
                       </div>
                     ))}
@@ -610,17 +697,22 @@ export default function ListingDetailPage() {
                   icon:  <Truck className="w-4 h-4 text-stone-400" />,
                   label: isService ? "Arrangement" : "Meet-up / Delivery",
                   // Reflects the actual deliveryMethod the seller chose in the form
-                  value: extra.deliveryMethod,
+                  value: isService ? extra.arrangement : extra.deliveryMethod,
                 },
                 {
                   icon:  <Eye className="w-4 h-4 text-stone-400" />,
-                  label: "Listing stats",
-                  value: `${extra.views} views · ${extra.offers} ${isService ? "bookings" : "offers"} received`,
+                  label: "Transactions",
+                  value: extra.transactionCount > 1 ? `${extra.transactionCount} Interactions` : `${extra.transactionCount} Interaction`,
+                },
+                {
+                  icon:  <Star className="w-4 h-4 text-stone-400" />,
+                  label: "Reviews",
+                  value: extra.reviewCount > 1 ? `${extra.reviewCount} Reviews` : `${extra.reviewCount} Review`,
                 },
               ].map((row) => (
                 <div key={row.label} className="flex items-center gap-3 px-5 py-3.5">
                   <div className="shrink-0">{row.icon}</div>
-                  <span className="text-xs text-stone-400 dark:text-stone-500 w-36 shrink-0">{row.label}</span>
+                  <span className="text-xs text-black dark:text-white w-36 shrink-0">{row.label}</span>
                   <span className="text-sm text-stone-700 dark:text-stone-200">{row.value}</span>
                 </div>
               ))}
@@ -631,7 +723,7 @@ export default function ListingDetailPage() {
               <div>
                 <h2 className="font-bold text-stone-900 dark:text-stone-50 text-base mb-3">You might also like</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {related.map((l) => <RelatedCard key={l.id} listing={l} />)}
+                  {related.map((l) => <PostCard key={l.id} {...l} />)}
                 </div>
               </div>
             )}
@@ -667,46 +759,65 @@ export default function ListingDetailPage() {
 
                 {/* Price */}
                 <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-2xl font-extrabold text-stone-900 dark:text-stone-50">{fmt.format(listing.price)}</span>
-                  {listing.priceUnit && <span className="text-stone-400 dark:text-stone-500 text-sm">{listing.priceUnit}</span>}
+                  <span className="text-2xl font-extrabold text-amber-700 dark:text-amber-500">{formatPrice(listing.price)}</span>
+                  {listing.priceUnit && <span className="text-black dark:text-white text-sm">{listing.priceUnit}</span>}
                 </div>
 
                 {/* Location + posted */}
-                <div className="flex flex-wrap items-center gap-3 text-sm text-stone-400 dark:text-stone-500 mb-4">
+                <div className="flex flex-wrap items-center gap-3 text-sm text-black dark:text-white mb-4">
                   <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{listing.location}</span>
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />Posted {listing.postedAt}</span>
+                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />Posted {formatTimeAgo(listing.postedAt)}</span>
                 </div>
 
                 {/* ── CTA buttons ── */}
                 {isOwnListing ? (
                   <div className="flex flex-col gap-2">
-                    {isSold ? (
+                    {isDeletedState || isBannedState || isSold ? (
                       <button
                         disabled
-                        className="flex items-center justify-center gap-2 w-full py-3 rounded-full bg-emerald-600/90 text-white text-sm font-bold cursor-not-allowed opacity-95"
+                        className="flex items-center justify-center gap-2 w-full py-3 rounded-full bg-stone-400/80 text-white text-sm font-bold cursor-not-allowed opacity-95"
                       >
-                        <CheckCircle className="w-4 h-4" /> Sold
+                        <AlertTriangle className="w-4 h-4" /> Unavailable
                       </button>
                     ) : (
                       <>
+                        {/* Edit Listing Button */}
                         <Link
                           href={`/listing/${id}/edit`}
                           className="flex items-center justify-center gap-2 w-full py-3 rounded-full bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 text-sm font-bold hover:opacity-90 transition-opacity">
-                          ✏️ Edit Listing
+                          Edit Listing
                         </Link>
+
+                        {/* Hide Listing Button */}
+                        <button
+                          onClick={handleListingVisibility}
+                          disabled={toggling}
+                          className="flex items-center justify-center w-full py-2.5 rounded-full border-2 border-stone-200 dark:border-[#2a2d3e] text-stone-700 dark:text-stone-200 bg-white dark:bg-transparent text-sm font-semibold hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-50 dark:hover:bg-[#252837] transition-all"
+                        >
+                          {isListingAvailable ? "Hide Listing" : "Show Listing"}
+                        </button>
+
+                        {/* Remove Listing Button */}
                         <button
                           onClick={handleRemoveListing}
                           disabled={deleting}
                           className="flex items-center justify-center gap-2 w-full py-3 rounded-full border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                          🗑 {deleting ? "Removing..." : "Remove Listing"}
+                          {deleting ? "Removing..." : "Remove Listing"}
                         </button>
                       </>
                     )}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    {isSold ? (
+                    {visitorUnavailableState ? (
+                      <button
+                        disabled
+                        className="flex items-center justify-center gap-2 w-full py-3 rounded-full bg-stone-400/80 text-white text-sm font-bold cursor-not-allowed opacity-95"
+                      >
+                        <AlertTriangle className="w-4 h-4" /> Unavailable
+                      </button>
+                    ) : isSold ? (
                       <button
                         disabled
                         className="flex items-center justify-center gap-2 w-full py-3 rounded-full bg-emerald-600/90 text-white text-sm font-bold cursor-not-allowed opacity-95"
@@ -718,8 +829,7 @@ export default function ListingDetailPage() {
                         {isSell && (
                           <button
                             onClick={handleBuy}
-                            className="flex items-center justify-center gap-2 w-full py-3 rounded-full text-sm font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                            style={{ background: "linear-gradient(135deg, #1e2433 0%, #3a4a6a 100%)" }}>
+                            className="flex items-center justify-center gap-2 w-full py-3 rounded-full border-2 border-stone-200 dark:border-[#2a2d3e] text-stone-700 dark:text-stone-200 bg-white dark:bg-transparent text-sm font-bold hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-50 dark:hover:bg-[#252837] transition-all active:scale-[0.98]">
                             <Zap className="w-4 h-4" /> Make an Offer
                           </button>
                         )}
@@ -752,29 +862,22 @@ export default function ListingDetailPage() {
               {/* ── Seller card ── */}
               <div className="flex flex-col gap-4 bg-white dark:bg-[#1c1f2e] rounded-2xl border border-stone-200 dark:border-[#2a2d3e] shadow-sm p-5 mb-4">
                 <div className="flex items-center gap-3">
-                  <Link href={sellerProfileHref} className="block">
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#3a4a6a] to-[#1e2a40] flex items-center justify-center text-white font-bold text-lg flex-shrink-0 overflow-hidden hover:opacity-90 transition-opacity">
-                        {listing.seller.profileImageUrl ? (
-                          <Image
-                            src={listing.seller.profileImageUrl}
-                            alt={listing.seller.name}
-                            width={48}
-                            height={48}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          listing.seller.name[0].toUpperCase()
-                        )}
-                      </div>
-                      {sellerOnline && (
-                        <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#1c1f2e]" />
-                      )}
-                    </div>
-                  </Link>
+                  <ImageLink
+                    href={sellerProfileHref}
+                    src={listing.seller.profileImageUrl}
+                    type="profile"
+                    label={listing.seller.name}
+                    className="w-10 h-10"
+                  >
+                    {sellerOnline && (
+                      <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-[#1c1f2e]" />
+                    )}
+                  </ImageLink>
                   <div className="min-w-0">
-                    <p className="font-bold text-stone-900 dark:text-stone-50 text-md">{listing.seller.name}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                    <p className="font-bold text-stone-900 dark:text-stone-50 text-sm">{listing.seller.name}</p>
+                    <VerificationBadge verified={Boolean(listing.seller.isPro)} />
+                    </div>
                       {hasSellerRating ? (
                         <span className="flex items-center gap-0.5 text-xs text-amber-500 font-semibold">
                           <Star className="w-3 h-3 fill-amber-400" /> {sellerRating.toFixed(1)}
@@ -782,19 +885,13 @@ export default function ListingDetailPage() {
                       ) : (
                         <span className="text-xs text-stone-400 dark:text-stone-500 font-medium">No ratings yet</span>
                       )}
-                      <VerificationBadge
-                        verified={Boolean(listing.seller.isPro)}
-                        className="text-[10px] px-2 py-0.5"
-                      />
-                    </div>
                   </div>
                 </div>
 
                 {/* View Profile Button */}
                 <Link
                   href={sellerProfileHref}
-                  className="flex items-center justify-center w-full py-2.5 rounded-full border border-stone-200 dark:border-[#2a2d3e] text-stone-600 dark:text-stone-300 text-sm font-semibold hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-50 dark:hover:bg-[#252837] transition-all"
-                  style={{ background: "linear-gradient(135deg, #1e2433 0%, #3a4a6a 100%)" }}>
+                  className="flex items-center justify-center w-full py-2.5 rounded-full border-2 border-stone-200 dark:border-[#2a2d3e] text-stone-700 dark:text-stone-200 bg-white dark:bg-transparent text-sm font-semibold hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-50 dark:hover:bg-[#252837] transition-all">
                   {isOwnListing ? "View My Profile" : "View Seller Profile"}
                 </Link>
 
@@ -802,7 +899,7 @@ export default function ListingDetailPage() {
                 <button
                   onClick={handleShowContactNumber}
                   disabled={isFetchingContact}
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-full border border-stone-200 dark:border-[#2a2d3e] text-sm font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]">
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-full border-2 border-stone-200 dark:border-[#2a2d3e] text-stone-700 dark:text-stone-200 bg-white dark:bg-transparent text-sm font-bold hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-50 dark:hover:bg-[#252837] transition-all active:scale-[0.98]">
                   <Phone className="w-3.5 h-3.5" /> {shownContactNumber ?? (isFetchingContact ? "Loading Number..." : "Show Contact Number")}
                 </button>
               </div>
@@ -835,103 +932,35 @@ export default function ListingDetailPage() {
         </div>
       </div>
 
-      {/* ══ OFFER MODAL ══════════════════════════════════════════════════════ */}
-      {offerOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          onClick={(e) => e.target === e.currentTarget && setOfferOpen(false)}>
-          <div className="bg-white dark:bg-[#1c1f2e] rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
-            <div className="bg-[#1e2433] px-6 py-5">
-              <h2 className="text-white font-bold text-lg">
-                {isSell ? "Make an Offer" : isRent ? "Request to Rent" : "Book Service"}
-              </h2>
-              <p className="text-slate-400 text-sm mt-1 truncate">{listing.title}</p>
-            </div>
-            <div className="p-6">
-              {offerSent ? (
-                <div className="text-center py-6">
-                  <div className="text-5xl mb-3">🎉</div>
-                  <p className="font-bold text-stone-900 dark:text-stone-50 text-lg">
-                    {isSell ? "Offer Sent!" : isRent ? "Request Sent!" : "Booking Sent!"}
-                  </p>
-                  <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">The seller will respond shortly.</p>
-                </div>
-              ) : (
-                <>
-                  {isSell && (
-                    <div className="mb-4">
-                      <div className="flex justify-between text-xs text-stone-500 dark:text-stone-400 mb-2">
-                        <span>Your offer</span>
-                        <span>Listed at {fmt.format(listing.price)}</span>
-                      </div>
-                      <div className="flex items-center border-2 border-stone-200 dark:border-[#2a2d3e] rounded-xl overflow-hidden focus-within:border-stone-400 dark:focus-within:border-stone-500 transition-colors">
-                        <span className="px-4 text-stone-400 dark:text-stone-500 font-semibold text-sm bg-stone-50 dark:bg-[#13151f] py-3 border-r border-stone-200 dark:border-[#2a2d3e]">₱</span>
-                        <input
-                          type="number" value={offerAmount}
-                          onChange={(e) => setOfferAmt(e.target.value)}
-                          className="flex-1 px-4 py-3 text-stone-900 dark:text-stone-50 bg-transparent text-sm font-semibold outline-none"
-                        />
-                      </div>
-                      <div className="flex gap-2 mt-2">
-                        {[0.9, 0.85, 0.8].map((p) => (
-                          <button key={p}
-                            onClick={() => setOfferAmt(String(Math.round(listing.price * p)))}
-                            className="flex-1 text-xs py-1.5 rounded-full border border-stone-200 dark:border-[#2a2d3e] text-stone-500 dark:text-stone-400 hover:border-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors">
-                            {Math.round(p * 100)}%
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div className="mb-4">
-                    <label className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-1.5 block">
-                      {isSell ? "Add a message (optional)" : "Your message"}
-                    </label>
-                    <textarea
-                      rows={3}
-                      placeholder={
-                        isSell    ? "e.g. Can we meet up in SM Calamba on Saturday?"        :
-                        isRent    ? "e.g. I'd like to rent from Aug 1–7. Still available?"  :
-                                    "e.g. I need aircon cleaning for 2 units. When are you available?"
-                      }
-                      className="w-full bg-stone-50 dark:bg-[#13151f] border border-stone-200 dark:border-[#2a2d3e] rounded-xl px-3 py-2.5 text-sm text-stone-800 dark:text-stone-100 placeholder-stone-400 dark:placeholder-stone-600 outline-none focus:border-stone-400 dark:focus:border-stone-500 resize-none"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setOfferOpen(false)}
-                      className="flex-1 py-3 rounded-full border border-stone-200 dark:border-[#2a2d3e] text-stone-600 dark:text-stone-300 text-sm font-semibold hover:bg-stone-50 dark:hover:bg-[#252837] transition-colors">
-                      Cancel
-                    </button>
-                    <button
-                      onClick={sendOffer}
-                      className="flex-1 py-3 rounded-full bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 text-sm font-bold hover:opacity-90 transition-opacity">
-                      Send →
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ══ REQUEST TO RENT MODAL ══════════════════════════════════════════════ */}
-      <RequestToRentModal
-        open={rentOpen}
-        onClose={() => setRentOpen(false)}
-        listingTitle={listing.title}
-        listingPrice={listing.price}
-        priceUnit={listing.priceUnit ?? ""}
+      <OfferModal
+        open={offerOpen}
+        title="Make an Offer"
+        subtitle={listing.title}
+        listedPrice={listing.price}
+        offerAmount={offerAmount}
+        onOfferAmountChange={setOfferAmt}
+        note={offerMessage}
+        onNoteChange={setOfferMessage}
+        noteLabel="Add a message (optional)"
+        notePlaceholder="e.g. Can we meet up in SM Calamba on Saturday?"
+        submitLabel="Send Offer"
+        submitting={submittingOffer}
+        onSubmit={sendOffer}
+        onClose={() => setOfferOpen(false)}
       />
 
-      {/* ══ BOOK SERVICE MODAL ════════════════════════════════════════════════ */}
-      <BookServiceModal
-        open={bookOpen}
-        onClose={() => setBookOpen(false)}
+      {/* ══ SCHEDULE REQUEST MODAL ══════════════════════════════════════════════ */}
+      <ScheduleModal
+        open={scheduleOpen}
+        onClose={() => setScheduleOpen(false)}
+        onSubmit={sendSchedule}
         listingTitle={listing.title}
         listingPrice={listing.price}
         priceUnit={listing.priceUnit ?? ""}
+        availableFrom={extra.available_from}
+        daysOff={extra.daysOff ?? []}
+        timeWindows={extra.timeWindows ?? []}
+        submitLabel={isService ? "Request Service Schedule" : "Request Rent Schedule"}
       />
 
       {/* ══ REPORT MODAL ══════════════════════════════════════════════════════ */}
@@ -946,10 +975,26 @@ export default function ListingDetailPage() {
         />
       )}
 
+      {mediaViewerIndex !== null && galleryMediaItems.length > 0 && (
+        <MediaViewerModal
+          mediaItems={galleryMediaItems}
+          activeIndex={mediaViewerIndex}
+          onSelect={setMediaViewerIndex}
+          onClose={() => setMediaViewerIndex(null)}
+        />
+      )}
+
       {/* ── Mobile sticky bar ── */}
       {!isOwnListing && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-[#1c1f2e] border-t border-stone-200 dark:border-[#2a2d3e] px-4 py-3 flex gap-3 shadow-lg">
-          {isSold ? (
+          {visitorUnavailableState ? (
+            <button
+              disabled
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full bg-stone-400/80 text-white text-sm font-bold cursor-not-allowed opacity-95"
+            >
+              <AlertTriangle className="w-4 h-4" /> Unavailable
+            </button>
+          ) : isSold ? (
             <button
               disabled
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full bg-emerald-600/90 text-white text-sm font-bold cursor-not-allowed opacity-95"

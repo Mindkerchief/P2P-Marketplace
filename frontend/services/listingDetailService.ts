@@ -5,15 +5,19 @@ export interface ListingExtra {
   condition: string;
   images: string[];
   features: string[];
-  views: number;
-  offers: number;
+  transactionCount: number;
+  reviewCount: number;
   deliveryMethod: string;
   minPeriod?: string;
+  available_from?: string;
   availability?: string;
   deposit?: string;
   amenities?: string[];
+  daysOff?: string[];
+  timeWindows?: { startTime: string; endTime: string }[];
   turnaround?: string;
   serviceArea?: string;
+  arrangement?: string;
   inclusions?: string[];
 }
 
@@ -140,21 +144,63 @@ export async function submitUserListingReport(
   }
 }
 
-export async function markListingAsSold(id: string): Promise<void> {
+export async function markListingAsComplete(id: string): Promise<void> {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/listing/${id}/mark-sold`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/listing/${id}/mark-complete`, {
       method: "PATCH",
       credentials: "include",
     });
 
     if (!res.ok) {
       const parsedJson = await res.json();
-      throw parsedJson?.data?.message || "Failed to mark listing as sold.";
+      throw parsedJson?.data?.message || "Failed to complete listing transaction.";
     }
   } catch (err) {
     if (typeof err === "string") throw err;
     if (err instanceof Error) throw err.message;
     throw "An unexpected error occurred. Please try again later.";
+  }
+}
+
+export async function deleteListing(id: string): Promise<{ listingId: string; status: "DELETED" }> {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/listing/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    const parsedJson = await res.json();
+    if (!res.ok) {
+      throw parsedJson?.data?.message || "Failed to remove listing.";
+    }
+
+    return {
+      listingId: parsedJson?.data?.listingId,
+      status: parsedJson?.data?.status,
+    };
+  } catch (error: any) {
+    throw error?.message || "An unexpected error occurred. Please try again later.";
+  }
+}
+
+export async function toggleListingVisibility(id: string): Promise<{ listingId: string; status: "AVAILABLE" | "UNAVAILABLE" }> {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/listing/${encodeURIComponent(id)}/toggle-visibility`, {
+      method: "PATCH",
+      credentials: "include",
+    });
+
+    const parsedJson = await res.json();
+    if (!res.ok) {
+      throw parsedJson?.data?.message || "Failed to update listing visibility.";
+    }
+
+    return {
+      listingId: parsedJson?.data?.listingId,
+      status: parsedJson?.data?.status,
+    };
+  } catch (error: any) {
+    throw error?.message || "An unexpected error occurred. Please try again later.";
   }
 }
 

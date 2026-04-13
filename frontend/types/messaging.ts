@@ -28,13 +28,35 @@ export interface ConversationParticipant {
   firstName: string;
   lastName: string;
   profileImageUrl?: string | null;
+  status?: string;
+  location?: string;
+  city?: string;
+  municipality?: string;
+  cityMunicipality?: string;
+  city_municipality?: string;
+  province?: string;
   isOnline?: boolean;
+  isActive?: boolean;
+  isLocked?: boolean;
+  accountLockedUntil?: string;
 }
 
 export interface ConversationListing {
   id: string;
   title: string;
   price: number;
+  offer?: number;
+  transactionStatus?: string;
+  canReview?: boolean;
+  providerAgreed?: boolean;
+  clientAgreed?: boolean;
+  userAgreed?: boolean;
+  schedule?: string;
+  scheduleStart?: string;
+  scheduleEnd?: string;
+  availableFrom?: string;
+  daysOff?: string[];
+  timeWindows?: { startTime: string; endTime: string }[];
   priceUnit?: string;
   listingType: ListingType;
   imageUrl?: string | null;
@@ -50,6 +72,8 @@ export interface Conversation {
   otherLastReadMessageId?: string;
   unreadCount: number;
   isSeller: boolean;
+  hasPendingReport?: boolean;
+  canSendMessage?: boolean;
 }
 
 export interface MessageAttachment {

@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"p2p_marketplace/backend/config"
 	"p2p_marketplace/backend/middleware"
@@ -11,6 +12,30 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 )
+
+func getOptionalRequesterRoleFromSession(c *fiber.Ctx) string {
+	sessionToken := strings.TrimSpace(c.Cookies(config.SessionCookieName))
+	if sessionToken == "" {
+		return ""
+	}
+
+	sessionId := middleware.HashToken(sessionToken)
+	sessionFromDb, err := repository.GetSessionById(sessionId)
+	if err != nil {
+		return ""
+	}
+
+	if sessionFromDb.UserId == "" || sessionFromDb.IsRevoked || sessionFromDb.ExpiresAt.Before(time.Now()) {
+		return ""
+	}
+
+	requester, err := repository.GetUserById(sessionFromDb.UserId)
+	if err != nil || !requester.IsActive {
+		return ""
+	}
+
+	return strings.ToUpper(strings.TrimSpace(requester.Role))
+}
 
 func MeProfile(c *fiber.Ctx) error {
 	userId := fmt.Sprintf("%v", c.Locals("userId"))
@@ -64,6 +89,13 @@ func ProfileById(c *fiber.Ctx) error {
 	user, err := repository.GetProfileUserById(profileUserId)
 	if err != nil {
 		return SendErrorResponse(c, 404, err.Error(), err)
+	}
+
+	now := time.Now().UTC()
+	requesterRole := getOptionalRequesterRoleFromSession(c)
+	canViewBlockedProfile := requesterRole == "ADMIN" || requesterRole == "SUPER_ADMIN"
+	if (!user.IsActive || (user.AccountLockedUntil != nil && user.AccountLockedUntil.After(now))) && !canViewBlockedProfile {
+		return SendErrorResponse(c, 404, "User not found", nil)
 	}
 
 	listings, err := repository.GetUserListings(profileUserId)
@@ -179,6 +211,60 @@ func UpdateMeProfileImages(c *fiber.Ctx) error {
 	})
 }
 
+func SubmitMeVerification(c *fiber.Ctx) error {
+	userId := fmt.Sprintf("%v", c.Locals("userId"))
+	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
+		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	}
+
+	var body model.SubmitVerificationBody
+	if err := c.BodyParser(&body); err != nil {
+		return SendErrorResponse(c, 400, "Invalid request body", err)
+	}
+
+	body.IdType = strings.TrimSpace(body.IdType)
+	body.IdNumber = strings.TrimSpace(body.IdNumber)
+	body.IdFirstName = strings.TrimSpace(body.IdFirstName)
+	body.IdLastName = strings.TrimSpace(body.IdLastName)
+	body.IdBirthdate = strings.TrimSpace(body.IdBirthdate)
+	body.UserAgent = strings.TrimSpace(body.UserAgent)
+	body.IpAddress = strings.TrimSpace(body.IpAddress)
+	body.HardwareInfo = strings.TrimSpace(body.HardwareInfo)
+
+	if body.IdType == "" {
+		return SendErrorResponse(c, 400, "ID type is required", nil)
+	}
+	if body.IdNumber == "" {
+		return SendErrorResponse(c, 400, "ID number is required", nil)
+	}
+	if body.IdFirstName == "" || body.IdLastName == "" {
+		return SendErrorResponse(c, 400, "ID first and last name are required", nil)
+	}
+	if body.IdBirthdate == "" {
+		return SendErrorResponse(c, 400, "ID birthdate is required", nil)
+	}
+	if body.MobileNumber == "" {
+		return SendErrorResponse(c, 400, "Mobile number is required", nil)
+	}
+	if body.IdImageFront == nil || strings.TrimSpace(body.IdImageFront.Data) == "" {
+		return SendErrorResponse(c, 400, "ID front image is required", nil)
+	}
+	if body.IdImageBack == nil || strings.TrimSpace(body.IdImageBack.Data) == "" {
+		return SendErrorResponse(c, 400, "ID back image is required", nil)
+	}
+	if body.SelfieImage == nil || strings.TrimSpace(body.SelfieImage.Data) == "" {
+		return SendErrorResponse(c, 400, "Selfie image is required", nil)
+	}
+
+	if err := repository.SubmitUserVerification(userId, body); err != nil {
+		return SendErrorResponse(c, 500, err.Error(), err)
+	}
+
+	return SendSuccessResponse(c, 201, "Verification submitted successfully", map[string]any{
+		"status": "PENDING",
+	})
+}
+
 func DeactivateMeProfile(c *fiber.Ctx) error {
 	userId := fmt.Sprintf("%v", c.Locals("userId"))
 	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
@@ -224,16 +310,17 @@ func mapProfileListings(listings []model.ProfileListingFromDb, apiURL string) []
 	mapped := make([]map[string]any, 0, len(listings))
 	for _, listing := range listings {
 		mapped = append(mapped, map[string]any{
-			"id":        listing.Id,
-			"title":     listing.Title,
-			"price":     listing.Price,
-			"priceUnit": listing.PriceUnit,
-			"type":      listing.Type,
-			"category":  listing.Category,
-			"location":  listing.Location,
-			"postedAt":  listing.PostedAt,
-			"imageUrl":  resolveAssetURL(apiURL, listing.ImageUrl),
-			"status":    listing.Status,
+			"id":               listing.Id,
+			"title":            listing.Title,
+			"price":            listing.Price,
+			"priceUnit":        listing.PriceUnit,
+			"type":             listing.Type,
+			"category":         listing.Category,
+			"location":         listing.Location,
+			"postedAt":         listing.PostedAt,
+			"imageUrl":         resolveAssetURL(apiURL, listing.ImageUrl),
+			"status":           listing.Status,
+			"hasActiveBooking": listing.HasActiveBooking,
 			"seller": map[string]any{
 				"name":   listing.SellerName,
 				"rating": listing.SellerRating,
@@ -255,6 +342,7 @@ func mapProfileReviews(reviews []model.ProfileReviewFromDb, apiURL string) []map
 				"id":              review.ReviewerId,
 				"name":            review.ReviewerName,
 				"profileImageUrl": resolveAssetURL(apiURL, review.ReviewerImageUrl),
+				"status":          strings.ToLower(strings.TrimSpace(review.ReviewerStatus)),
 			},
 			"listing": map[string]any{
 				"id":        review.ListingId,
@@ -262,6 +350,8 @@ func mapProfileReviews(reviews []model.ProfileReviewFromDb, apiURL string) []map
 				"price":     review.ListingPrice,
 				"priceUnit": review.ListingPriceUnit,
 				"imageUrl":  resolveAssetURL(apiURL, review.ListingImageUrl),
+				"type":      review.ListingType,
+				"location":  review.ListingLocation,
 			},
 		})
 	}
@@ -271,7 +361,7 @@ func mapProfileReviews(reviews []model.ProfileReviewFromDb, apiURL string) []map
 func resolveAssetURL(apiURL, raw string) string {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
-		return "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=80"
+		return ""
 	}
 	if strings.HasPrefix(trimmed, "http://") || strings.HasPrefix(trimmed, "https://") {
 		return trimmed

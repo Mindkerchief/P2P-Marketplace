@@ -71,8 +71,14 @@ func GetListingEditById(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 404, err.Error(), err)
 	}
 
+	timeWindows, err := repository.GetListingTimeWindows(listingId)
+	if err != nil {
+		return SendErrorResponse(c, 500, err.Error(), err)
+	}
+
 	included := parseJSONStringArray(listing.Included)
 	highlights := parseJSONStringArray(listing.Highlights)
+	daysOff := parseJSONStringArray(listing.DaysOff)
 
 	data := map[string]any{
 		"id":             listing.Id,
@@ -93,8 +99,11 @@ func GetListingEditById(c *fiber.Ctx) error {
 		"deposit":        listing.Deposit,
 		"turnaround":     listing.Turnaround,
 		"serviceArea":    listing.ServiceArea,
+		"arrangement":    listing.Arrangement,
 		"inclusions":     []string{},
 		"amenities":      []string{},
+		"dayoffs":        daysOff,
+		"timeWindows":    timeWindows,
 	}
 
 	if listing.AvailableFrom != nil {
@@ -167,7 +176,39 @@ func DeleteListing(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, err.Error(), err)
 	}
 
-	return SendSuccessResponse(c, 200, "Listing removed successfully", map[string]any{"listingId": listingId})
+	return SendSuccessResponse(c, 200, "Listing removed successfully", map[string]any{
+		"listingId": listingId,
+		"status":    "DELETED",
+	})
+}
+
+func ToggleListingVisibility(c *fiber.Ctx) error {
+	listingId := strings.TrimSpace(c.Params("id"))
+	if listingId == "" {
+		return SendErrorResponse(c, 400, "Listing ID is required", nil)
+	}
+
+	userId := fmt.Sprintf("%v", c.Locals("userId"))
+	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
+		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	}
+
+	nextStatus, err := repository.ToggleListingVisibility(userId, listingId)
+	if err != nil {
+		message := err.Error()
+		if strings.EqualFold(message, "Listing not found or unauthorized") {
+			return SendErrorResponse(c, 404, message, err)
+		}
+		if strings.EqualFold(message, "Cannot update visibility for deleted listing") || strings.EqualFold(message, "Cannot update visibility for sold listing") || strings.EqualFold(message, "Listing visibility cannot be toggled from current status") {
+			return SendErrorResponse(c, 400, message, err)
+		}
+		return SendErrorResponse(c, 500, message, err)
+	}
+
+	return SendSuccessResponse(c, 200, "Listing visibility updated successfully", map[string]any{
+		"listingId": listingId,
+		"status":    nextStatus,
+	})
 }
 
 func GetListingById(c *fiber.Ctx) error {
@@ -182,6 +223,11 @@ func GetListingById(c *fiber.Ctx) error {
 	}
 
 	images, err := repository.GetListingImages(listingId)
+	if err != nil {
+		return SendErrorResponse(c, 500, err.Error(), err)
+	}
+
+	timeWindows, err := repository.GetListingTimeWindows(listingId)
 	if err != nil {
 		return SendErrorResponse(c, 500, err.Error(), err)
 	}
@@ -204,32 +250,43 @@ func GetListingById(c *fiber.Ctx) error {
 	baseURL := c.BaseURL()
 	features := parseJSONStringArray(listing.Highlights)
 	included := parseJSONStringArray(listing.Included)
+	daysOff := parseJSONStringArray(listing.DaysOff)
 
 	extra := map[string]any{
-		"description":    listing.Description,
-		"condition":      mapConditionDisplay(listing.Condition),
-		"images":         mapAssetURLs(baseURL, images),
-		"features":       features,
-		"views":          listing.ViewCount,
-		"offers":         0,
-		"deliveryMethod": mapDeliveryDisplay(listing.DeliveryMethod),
+		"description":      listing.Description,
+		"condition":        mapConditionDisplay(listing.Condition),
+		"images":           mapAssetURLs(baseURL, images),
+		"features":         features,
+		"transactionCount": listing.TransactionCount,
+		"reviewCount":      listing.ReviewCount,
+		"deliveryMethod":   mapDeliveryDisplay(listing.DeliveryMethod),
 	}
 
 	switch listing.Type {
 	case "rent":
 		extra["minPeriod"] = formatMinPeriod(listing.MinRentalPeriod)
 		if listing.AvailableFrom != nil {
+			extra["available_from"] = listing.AvailableFrom.Format("2006-01-02")
 			extra["availability"] = listing.AvailableFrom.Format("Jan 02, 2006")
 		}
 		extra["deposit"] = listing.Deposit
 		extra["amenities"] = included
+		extra["daysOff"] = daysOff
 	case "service":
+		if listing.AvailableFrom != nil {
+			extra["available_from"] = listing.AvailableFrom.Format("2006-01-02")
+			extra["availability"] = listing.AvailableFrom.Format("Jan 02, 2006")
+		}
 		extra["turnaround"] = listing.Turnaround
 		extra["serviceArea"] = listing.ServiceArea
+		extra["arrangement"] = listing.Arrangement
 		extra["inclusions"] = included
+		extra["daysOff"] = daysOff
 	default:
 		extra["inclusions"] = included
 	}
+
+	extra["timeWindows"] = timeWindows
 
 	listingCard := map[string]any{
 		"id":         listing.Id,
@@ -241,7 +298,7 @@ func GetListingById(c *fiber.Ctx) error {
 		"sellStatus": strings.ToLower(strings.TrimSpace(listing.SellStatus)),
 		"category":   listing.Category,
 		"location":   strings.TrimSpace(fmt.Sprintf("%s, %s", listing.LocationCity, listing.LocationProv)),
-		"postedAt":   timeAgo(listing.CreatedAt),
+		"postedAt":   listing.CreatedAt.UTC().Format(time.RFC3339),
 		"imageUrl":   mapPrimaryImage(baseURL, images),
 		"seller": map[string]any{
 			"id":              listing.SellerId,
@@ -249,6 +306,7 @@ func GetListingById(c *fiber.Ctx) error {
 			"profileImageUrl": mapPrimaryImage(baseURL, []string{listing.SellerProfileImage}),
 			"rating":          listing.SellerRating,
 			"isPro":           listing.SellerVerified,
+			"isActive":        listing.SellerIsActive,
 		},
 	}
 
@@ -300,7 +358,7 @@ func RemoveListingBookmark(c *fiber.Ctx) error {
 	})
 }
 
-func MarkListingAsSold(c *fiber.Ctx) error {
+func MarkListingAsComplete(c *fiber.Ctx) error {
 	listingId := strings.TrimSpace(c.Params("id"))
 	if listingId == "" {
 		return SendErrorResponse(c, 400, "Listing ID is required", nil)
@@ -311,29 +369,57 @@ func MarkListingAsSold(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 401, "User is not authenticated", nil)
 	}
 
-	if err := repository.MarkListingAsSold(userId, listingId); err != nil {
+	affectedConversationIds, listingMarkedSold, err := repository.MarkListingAsComplete(userId, listingId)
+	if err != nil {
 		return SendErrorResponse(c, 400, err.Error(), err)
 	}
 
-	participantIds, participantErr := repository.GetParticipantUserIdsByListing(listingId)
-	if participantErr == nil {
-		for _, targetUserId := range participantIds {
-			middleware.RealtimeHub.SendToUser(targetUserId, map[string]any{
-				"type": "listing:status",
-				"data": map[string]any{
-					"listingId":   listingId,
-					"status":      "SOLD",
-					"sellStatus":  "SOLD",
-					"updatedById": userId,
-				},
-			})
+	if listingMarkedSold {
+		participantIds, participantErr := repository.GetParticipantUserIdsByListing(listingId)
+		if participantErr == nil {
+			for _, targetUserId := range participantIds {
+				middleware.RealtimeHub.SendToUser(targetUserId, map[string]any{
+					"type": "listing:status",
+					"data": map[string]any{
+						"listingId":   listingId,
+						"status":      "SOLD",
+						"sellStatus":  "SOLD",
+						"updatedById": userId,
+					},
+				})
+			}
 		}
 	}
 
-	return SendSuccessResponse(c, 200, "Listing marked as sold successfully", map[string]any{
+	for _, conversationId := range affectedConversationIds {
+		trimmedConversationId := strings.TrimSpace(conversationId)
+		if trimmedConversationId == "" {
+			continue
+		}
+
+		realtimeMessagePayload := map[string]any{
+			"type": "message:new",
+			"data": map[string]any{
+				"conversationId": trimmedConversationId,
+			},
+		}
+
+		peerUserId, peerErr := repository.GetConversationPeerUserId(userId, trimmedConversationId)
+		if peerErr == nil && strings.TrimSpace(peerUserId) != "" {
+			middleware.RealtimeHub.SendToUser(peerUserId, realtimeMessagePayload)
+		}
+		middleware.RealtimeHub.SendToUser(userId, realtimeMessagePayload)
+	}
+
+	response := map[string]any{
 		"listingId": listingId,
-		"status":    "SOLD",
-	})
+		"completed": true,
+	}
+	if listingMarkedSold {
+		response["status"] = "SOLD"
+	}
+
+	return SendSuccessResponse(c, 200, "Listing transaction completed successfully", response)
 }
 
 func ReportListing(c *fiber.Ctx) error {
@@ -549,7 +635,7 @@ func GetListings(c *fiber.Ctx) error {
 			"category":  l.Category,
 			"condition": mapConditionDisplay(l.Condition),
 			"location":  location,
-			"postedAt":  timeAgo(l.CreatedAt),
+			"postedAt":  l.CreatedAt.UTC().Format(time.RFC3339),
 			"createdAt": l.CreatedAt.UnixMilli(),
 			"imageUrl":  mapPrimaryImage(baseURL, []string{l.ImageUrl}),
 			"seller": map[string]any{
@@ -592,7 +678,18 @@ func parseJSONStringArray(raw string) []string {
 
 	var parsed []string
 	if err := json.Unmarshal([]byte(trimmed), &parsed); err != nil {
-		return []string{trimmed}
+		parts := strings.Split(trimmed, ",")
+		out := make([]string, 0, len(parts))
+		for _, part := range parts {
+			value := strings.TrimSpace(part)
+			if value != "" {
+				out = append(out, value)
+			}
+		}
+		if len(out) == 0 {
+			return []string{trimmed}
+		}
+		return out
 	}
 
 	out := make([]string, 0, len(parsed))
@@ -664,7 +761,7 @@ func mapAssetURLs(baseURL string, raw []string) []string {
 func mapPrimaryImage(baseURL string, raw []string) string {
 	images := mapAssetURLs(baseURL, raw)
 	if len(images) == 0 {
-		return "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=80"
+		return ""
 	}
 	return images[0]
 }
@@ -674,7 +771,7 @@ func mapRelatedListings(baseURL string, listings []model.ProfileListingFromDb) [
 	for _, l := range listings {
 		img := l.ImageUrl
 		if img == "" {
-			img = "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=80"
+			img = ""
 		} else if !strings.HasPrefix(img, "http://") && !strings.HasPrefix(img, "https://") {
 			img = strings.TrimRight(baseURL, "/") + "/" + strings.TrimLeft(img, "/")
 		}

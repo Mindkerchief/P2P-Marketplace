@@ -2,6 +2,7 @@ import { PostCardProps } from "@/components/post-card";
 
 export interface ProfileListingItem extends PostCardProps {
   status?: "active" | "sold" | "rented" | "completed" | "hidden" | string;
+  hasActiveBooking?: boolean;
 }
 
 export interface ProfileReviewItem {
@@ -13,6 +14,7 @@ export interface ProfileReviewItem {
     id: string;
     name: string;
     profileImageUrl?: string;
+    status?: string;
   };
   listing: {
     id: string;
@@ -20,6 +22,8 @@ export interface ProfileReviewItem {
     price: number;
     priceUnit?: string;
     imageUrl: string;
+    type?: string;
+    location?: string;
   };
 }
 
