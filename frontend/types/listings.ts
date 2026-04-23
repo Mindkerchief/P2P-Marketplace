@@ -1,4 +1,4 @@
-export type ListingType = "sell" | "rent" | "service";
+export type ListingType = "SELL" | "RENT" | "SERVICE";
 
 export const CATEGORIES = [
   "Agriculture & Gardening",
@@ -23,13 +23,13 @@ export const CATEGORIES = [
 ];
 
 export const PRICE_UNITS: Record<ListingType, string[]> = {
-  sell: [
+  SELL: [
     "Fixed Price",
     "Starting Price",
     "Negotiable",
     "Contact for Price"
   ],
-  rent: [
+  RENT: [
     "/ minute",
     "/ hour",
     "/ day", 
@@ -38,7 +38,7 @@ export const PRICE_UNITS: Record<ListingType, string[]> = {
     "/ month",
     "/ year"
   ],
-  service: [
+  SERVICE: [
     "/ hour",
     "/ session",
     "/ project",
