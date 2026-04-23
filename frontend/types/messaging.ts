@@ -1,6 +1,6 @@
 // ─── Enums (mirror the DB enums) ─────────────────────────────────────────────
+import { ListingType } from "@/types/listings";
 
-export type ListingType    = "SELL" | "RENT" | "SERVICE";
 export type MessageStatus  = "SENT" | "DELIVERED" | "READ";
 export type AttachmentType = "IMAGE" | "VIDEO";
 
