@@ -301,6 +301,22 @@ func GetConversations(c *fiber.Ctx) error {
 	})
 }
 
+func GetUnreadMessageCount(c *fiber.Ctx) error {
+	userId, err := getAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
+	}
+
+	count, err := repository.GetUnreadMessageCount(userId)
+	if err != nil {
+		return SendErrorResponse(c, 500, err.Error(), err)
+	}
+
+	return SendSuccessResponse(c, 200, "Unread message count fetched successfully", map[string]any{
+		"unreadCount": count,
+	})
+}
+
 func GetConversation(c *fiber.Ctx) error {
 	conversationId := strings.TrimSpace(c.Params("id"))
 	if conversationId == "" {
