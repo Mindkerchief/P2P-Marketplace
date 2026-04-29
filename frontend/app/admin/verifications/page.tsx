@@ -21,7 +21,7 @@ import {
   ShieldCheck,
   User,
   X,
-  XCircle,
+  XCircle
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -43,7 +43,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -55,12 +55,12 @@ import {
   STATUS_CONFIG,
   VERIFICATION_REVIEW_REASON_MAX_LENGTH
 } from './_constants/admin-verifications';
-import {
-  type IdType,
-  type SortDir,
-  type SortField,
-  type AdminVerification,
-  type AdminVerificationRecord
+import type {
+  IdType,
+  SortDir,
+  SortField,
+  AdminVerification,
+  AdminVerificationRecord
 } from './_types/admin-verifications';
 import {
   getAdminVerifications,

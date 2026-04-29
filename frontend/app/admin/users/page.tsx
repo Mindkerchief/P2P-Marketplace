@@ -14,7 +14,7 @@ import {
   Trash2,
   Users,
   X,
-  XCircle,
+  XCircle
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -30,7 +30,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import {
@@ -39,11 +39,11 @@ import {
 } from '@/services/adminUsersService';
 import { useConfirmDialog } from '@/utils/ConfirmDialogContext';
 
-import { type AdminUserRecord } from './_types/admin-users';
-import {
+import type {
   VerifStatus,
   SortDir,
   SortField,
+  AdminUserRecord,
   AdminUser
 } from './_types/admin-users';
 import { getAdminUsers } from './_services/admin-users';

@@ -11,7 +11,7 @@ import {
   RotateCw,
   Search,
   X,
-  XCircle,
+  XCircle
 } from 'lucide-react';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -27,7 +27,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/utils/string-builder';

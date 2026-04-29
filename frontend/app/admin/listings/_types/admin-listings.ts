@@ -1,4 +1,4 @@
-import { type ListingTypeU } from '@/types/listings';
+import type { ListingTypeU } from '@/types/listings';
 
 export type ListingStatus =
   | 'AVAILABLE'

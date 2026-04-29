@@ -17,7 +17,7 @@ import {
   UserCheck,
   UserCog,
   UserX,
-  X,
+  X
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -34,26 +34,26 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import {
   deleteAdminUser,
-  setAdminUserActive,
+  setAdminUserActive
 } from '@/services/adminUsersService';
 import { useConfirmDialog } from '@/utils/ConfirmDialogContext';
 import { AUTH_LIMITS } from '@/utils/validation';
 
-import {
-  type AdminRole,
-  type SortField,
-  type SortDir,
-  type AdminAccount,
-  type AdminAccountRecord
+import type {
+  AdminRole,
+  SortField,
+  SortDir,
+  AdminAccount,
+  AdminAccountRecord
 } from './_types/admin-management';
 import {
   createAdminAccount,
-  getAdminAccounts,
+  getAdminAccounts
 } from './_services/admin-management';
 import { validateCreateAdminInput } from './_utils/validation';
 

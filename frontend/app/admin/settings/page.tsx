@@ -50,10 +50,6 @@ function getStrengthScore(pw: string): number {
   ].filter(Boolean).length;
 }
 
-const LETTERS_SPACE_ONLY = /^[A-Za-z\s]+$/;
-
-// ── Sub-components ─────────────────────────────────────────────────────────────
-
 /** Eye-toggle button for password inputs */
 function EyeToggle({
   show,

@@ -29,7 +29,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/utils/string-builder';
@@ -38,17 +38,17 @@ import { useConfirmDialog } from '@/utils/ConfirmDialogContext';
 // TODO: The same as the transactions constants
 import { TYPE_CONFIG } from '../transactions/_constants/admin-transactions';
 import { STATUS_CONFIG } from './_constants/admin-listings';
-import {
-  type ListingStatus,
-  type SortDir,
-  type SortField,
-  type AdminListing,
-  type AdminListingRecord
+import type {
+  ListingStatus,
+  SortDir,
+  SortField,
+  AdminListing,
+  AdminListingRecord
 } from './_types/admin-listings';
 import {
   deleteAdminListing,
   getAdminListings,
-  toggleAdminListingVisibility,
+  toggleAdminListingVisibility
 } from './_services/admin-listings';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────

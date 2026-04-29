@@ -26,16 +26,16 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/utils/string-builder';
 
 import { TYPE_CONFIG, STATUS_CONFIG } from './_constants/admin-transactions';
-import {
-  type AdminTransactionRecord,
-  type SortDir,
-  type SortField
+import type {
+  AdminTransactionRecord,
+  SortDir,
+  SortField
 } from './_types/admin-transactions';
 import { getAdminTransactions } from './_services/admin-transactions';
 

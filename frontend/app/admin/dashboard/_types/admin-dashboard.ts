@@ -1,3 +1,5 @@
+import type { ListingTypeU } from "@/types/listings";
+
 export type AdminDashboardStats = {
   totalUsers: number;
   activeUsers: number;
@@ -23,7 +25,7 @@ export type AdminWeeklyNewUsers = {
 };
 
 export type AdminListingTypeBreakdown = {
-  type: 'SELL' | 'RENT' | 'SERVICE';
+  type: ListingTypeU;
   count: number;
   pct: number;
 };

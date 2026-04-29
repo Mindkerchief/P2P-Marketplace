@@ -1,5 +1,5 @@
 import type { ListingFormData } from '@/components/ListingForm';
-import { ListingType } from '@/types/listings';
+import type { ListingType } from '@/types/listings';
 
 export type ListingEditData = Partial<ListingFormData> & {
   type: ListingType;

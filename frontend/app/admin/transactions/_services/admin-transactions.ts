@@ -1,7 +1,7 @@
-import {
-  type AdminTransactionRecord,
-  type AdminTransactionsQuery,
-  type AdminTransactionsResponse,
+import type {
+  AdminTransactionRecord,
+  AdminTransactionsQuery,
+  AdminTransactionsResponse
 } from "../_types/admin-transactions";
 
 export async function getAdminTransactions(

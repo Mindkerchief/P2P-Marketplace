@@ -1,8 +1,8 @@
-import {
-  type AdminReportRecord,
-  type AdminReportsQuery,
-  type AdminReportsResponse,
-  type AdminReportActionPayload
+import type {
+  AdminReportRecord,
+  AdminReportsQuery,
+  AdminReportsResponse,
+  AdminReportActionPayload
 } from '../_types/admin-reports';
 
 export async function getAdminReports(

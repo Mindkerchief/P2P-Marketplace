@@ -1,8 +1,8 @@
-import {
-  type AdminAccountRecord,
-  type AdminAccountsQuery,
-  type AdminAccountsResponse,
-  type CreateAdminPayload
+import type {
+  AdminAccountRecord,
+  AdminAccountsQuery,
+  AdminAccountsResponse,
+  CreateAdminPayload
 } from '../_types/admin-management';
 
 export async function getAdminAccounts(

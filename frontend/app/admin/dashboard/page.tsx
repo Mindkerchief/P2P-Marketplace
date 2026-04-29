@@ -17,20 +17,18 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 import {
-  type AdminDashboardStats,
-  type AdminListingTypeBreakdown,
-  type AdminWeeklyNewUsers,
-} from "./_types/admin-dashboard";
-import {
   EMPTY_STATS,
   EMPTY_WEEKLY_NEW_USERS,
   EMPTY_LISTING_TYPE_BREAKDOWN,
   STAT_CARD_META,
   LISTING_TYPE_META
 } from './_constants/admin-dashboard';
-import {
-  getAdminDashboardStats,
-} from './_services/admin-dashboard';
+import type {
+  AdminDashboardStats,
+  AdminListingTypeBreakdown,
+  AdminWeeklyNewUsers
+} from "./_types/admin-dashboard";
+import { getAdminDashboardStats } from './_services/admin-dashboard';
 
 type Trend = 'up' | 'down' | 'neutral';
 

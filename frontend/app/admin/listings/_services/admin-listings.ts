@@ -1,7 +1,7 @@
-import {
-  type AdminListingRecord,
-  type AdminListingsQuery,
-  type AdminListingsResponse,
+import type {
+  AdminListingRecord,
+  AdminListingsQuery,
+  AdminListingsResponse,
 } from '../_types/admin-listings';
 
 export async function getAdminListings(
