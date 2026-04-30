@@ -2,12 +2,52 @@ package controller
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/gofiber/fiber/v2"
 
 	"p2p_marketplace/backend/config"
 	"p2p_marketplace/backend/middleware"
 	"p2p_marketplace/backend/model"
 	"p2p_marketplace/backend/repository"
 )
+
+// GetAuthenticatedUserId retrieves and validates the authenticated user ID from the context.
+func GetAuthenticatedUserId(c *fiber.Ctx) (string, error) {
+	userId := fmt.Sprintf("%v", c.Locals("userId"))
+	userId = strings.TrimSpace(userId)
+	if userId == "" || userId == "%!v(<nil>)" {
+		return "", fmt.Errorf("User is not authenticated")
+	}
+	return userId, nil
+}
+
+// ParsePagination parses limit and offset from query parameters.
+func ParsePagination(c *fiber.Ctx, defaultLimit, maxLimit int) (int, int, error) {
+	limit := defaultLimit
+	if rawLimit := strings.TrimSpace(c.Query("limit")); rawLimit != "" {
+		parsedLimit, parseErr := strconv.Atoi(rawLimit)
+		if parseErr != nil || parsedLimit <= 0 {
+			return 0, 0, fmt.Errorf("Invalid limit query parameter")
+		}
+		if maxLimit > 0 && parsedLimit > maxLimit {
+			parsedLimit = maxLimit
+		}
+		limit = parsedLimit
+	}
+
+	offset := 0
+	if rawOffset := strings.TrimSpace(c.Query("offset")); rawOffset != "" {
+		parsedOffset, parseErr := strconv.Atoi(rawOffset)
+		if parseErr != nil || parsedOffset < 0 {
+			return 0, 0, fmt.Errorf("Invalid offset query parameter")
+		}
+		offset = parsedOffset
+	}
+
+	return limit, offset, nil
+}
 
 func storeAndSendOTP(firstName, email string) (retCode int, err error) {
 	// Generate OTP and expiration time

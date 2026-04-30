@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -25,9 +24,9 @@ func adminToAbsoluteAssetURL(baseURL, raw string) string {
 }
 
 func requireAdmin(c *fiber.Ctx) (string, error) {
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return "", SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return "", SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	user, err := repository.GetUserById(userId)
@@ -44,9 +43,9 @@ func requireAdmin(c *fiber.Ctx) (string, error) {
 }
 
 func requireSuperAdmin(c *fiber.Ctx) (string, error) {
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return "", SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return "", SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	user, err := repository.GetUserById(userId)
@@ -120,25 +119,9 @@ func GetAdminUsers(c *fiber.Ctx) error {
 		return authErr
 	}
 
-	limit := 20
-	if rawLimit := strings.TrimSpace(c.Query("limit")); rawLimit != "" {
-		parsedLimit, parseErr := strconv.Atoi(rawLimit)
-		if parseErr != nil || parsedLimit <= 0 {
-			return SendErrorResponse(c, 400, "Invalid limit query parameter", parseErr)
-		}
-		if parsedLimit > 100 {
-			parsedLimit = 100
-		}
-		limit = parsedLimit
-	}
-
-	offset := 0
-	if rawOffset := strings.TrimSpace(c.Query("offset")); rawOffset != "" {
-		parsedOffset, parseErr := strconv.Atoi(rawOffset)
-		if parseErr != nil || parsedOffset < 0 {
-			return SendErrorResponse(c, 400, "Invalid offset query parameter", parseErr)
-		}
-		offset = parsedOffset
+	limit, offset, err := ParsePagination(c, 20, 100)
+	if err != nil {
+		return SendErrorResponse(c, 400, err.Error(), nil)
 	}
 
 	query := model.AdminUsersQuery{
@@ -267,25 +250,9 @@ func GetAdminListings(c *fiber.Ctx) error {
 		return authErr
 	}
 
-	limit := 20
-	if rawLimit := strings.TrimSpace(c.Query("limit")); rawLimit != "" {
-		parsedLimit, parseErr := strconv.Atoi(rawLimit)
-		if parseErr != nil || parsedLimit <= 0 {
-			return SendErrorResponse(c, 400, "Invalid limit query parameter", parseErr)
-		}
-		if parsedLimit > 100 {
-			parsedLimit = 100
-		}
-		limit = parsedLimit
-	}
-
-	offset := 0
-	if rawOffset := strings.TrimSpace(c.Query("offset")); rawOffset != "" {
-		parsedOffset, parseErr := strconv.Atoi(rawOffset)
-		if parseErr != nil || parsedOffset < 0 {
-			return SendErrorResponse(c, 400, "Invalid offset query parameter", parseErr)
-		}
-		offset = parsedOffset
+	limit, offset, err := ParsePagination(c, 20, 100)
+	if err != nil {
+		return SendErrorResponse(c, 400, err.Error(), nil)
 	}
 
 	query := model.AdminListingsQuery{
@@ -322,25 +289,9 @@ func GetAdminTransactions(c *fiber.Ctx) error {
 		return authErr
 	}
 
-	limit := 20
-	if rawLimit := strings.TrimSpace(c.Query("limit")); rawLimit != "" {
-		parsedLimit, parseErr := strconv.Atoi(rawLimit)
-		if parseErr != nil || parsedLimit <= 0 {
-			return SendErrorResponse(c, 400, "Invalid limit query parameter", parseErr)
-		}
-		if parsedLimit > 100 {
-			parsedLimit = 100
-		}
-		limit = parsedLimit
-	}
-
-	offset := 0
-	if rawOffset := strings.TrimSpace(c.Query("offset")); rawOffset != "" {
-		parsedOffset, parseErr := strconv.Atoi(rawOffset)
-		if parseErr != nil || parsedOffset < 0 {
-			return SendErrorResponse(c, 400, "Invalid offset query parameter", parseErr)
-		}
-		offset = parsedOffset
+	limit, offset, err := ParsePagination(c, 20, 100)
+	if err != nil {
+		return SendErrorResponse(c, 400, err.Error(), nil)
 	}
 
 	query := model.AdminTransactionsQuery{
@@ -432,25 +383,9 @@ func GetAdminReports(c *fiber.Ctx) error {
 		return authErr
 	}
 
-	limit := 20
-	if rawLimit := strings.TrimSpace(c.Query("limit")); rawLimit != "" {
-		parsedLimit, parseErr := strconv.Atoi(rawLimit)
-		if parseErr != nil || parsedLimit <= 0 {
-			return SendErrorResponse(c, 400, "Invalid limit query parameter", parseErr)
-		}
-		if parsedLimit > 100 {
-			parsedLimit = 100
-		}
-		limit = parsedLimit
-	}
-
-	offset := 0
-	if rawOffset := strings.TrimSpace(c.Query("offset")); rawOffset != "" {
-		parsedOffset, parseErr := strconv.Atoi(rawOffset)
-		if parseErr != nil || parsedOffset < 0 {
-			return SendErrorResponse(c, 400, "Invalid offset query parameter", parseErr)
-		}
-		offset = parsedOffset
+	limit, offset, err := ParsePagination(c, 20, 100)
+	if err != nil {
+		return SendErrorResponse(c, 400, err.Error(), nil)
 	}
 
 	query := model.AdminReportsQuery{
@@ -561,25 +496,9 @@ func GetAdminVerifications(c *fiber.Ctx) error {
 		return authErr
 	}
 
-	limit := 20
-	if rawLimit := strings.TrimSpace(c.Query("limit")); rawLimit != "" {
-		parsedLimit, parseErr := strconv.Atoi(rawLimit)
-		if parseErr != nil || parsedLimit <= 0 {
-			return SendErrorResponse(c, 400, "Invalid limit query parameter", parseErr)
-		}
-		if parsedLimit > 100 {
-			parsedLimit = 100
-		}
-		limit = parsedLimit
-	}
-
-	offset := 0
-	if rawOffset := strings.TrimSpace(c.Query("offset")); rawOffset != "" {
-		parsedOffset, parseErr := strconv.Atoi(rawOffset)
-		if parseErr != nil || parsedOffset < 0 {
-			return SendErrorResponse(c, 400, "Invalid offset query parameter", parseErr)
-		}
-		offset = parsedOffset
+	limit, offset, err := ParsePagination(c, 20, 100)
+	if err != nil {
+		return SendErrorResponse(c, 400, err.Error(), nil)
 	}
 
 	query := model.AdminVerificationsQuery{
@@ -658,25 +577,9 @@ func GetAdminAccounts(c *fiber.Ctx) error {
 		return authErr
 	}
 
-	limit := 20
-	if rawLimit := strings.TrimSpace(c.Query("limit")); rawLimit != "" {
-		parsedLimit, parseErr := strconv.Atoi(rawLimit)
-		if parseErr != nil || parsedLimit <= 0 {
-			return SendErrorResponse(c, 400, "Invalid limit query parameter", parseErr)
-		}
-		if parsedLimit > 100 {
-			parsedLimit = 100
-		}
-		limit = parsedLimit
-	}
-
-	offset := 0
-	if rawOffset := strings.TrimSpace(c.Query("offset")); rawOffset != "" {
-		parsedOffset, parseErr := strconv.Atoi(rawOffset)
-		if parseErr != nil || parsedOffset < 0 {
-			return SendErrorResponse(c, 400, "Invalid offset query parameter", parseErr)
-		}
-		offset = parsedOffset
+	limit, offset, err := ParsePagination(c, 20, 100)
+	if err != nil {
+		return SendErrorResponse(c, 400, err.Error(), nil)
 	}
 
 	query := model.AdminAccountsQuery{

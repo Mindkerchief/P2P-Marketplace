@@ -49,9 +49,9 @@ func SendOTP(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Invalid request body. Please contact support.", err)
 	}
 
-	userID := strings.TrimSpace(fmt.Sprintf("%v", c.Locals("userId")))
-	if userID == "" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	digits := normalizePHLocalNumber(req.PhoneNumber)
@@ -65,7 +65,7 @@ func SendOTP(c *fiber.Ctx) error {
 	}
 
 	phoneE164 := toE164(digits)
-	if err = repository.UpsertOTP(userID, phoneE164, rawOTP); err != nil {
+	if err = repository.UpsertOTP(userId, phoneE164, rawOTP); err != nil {
 		return SendErrorResponse(c, 500, "Failed to store OTP. Please try again.", err)
 	}
 
@@ -89,9 +89,9 @@ func VerifyOTP(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Invalid request body. Please contact support.", err)
 	}
 
-	userID := strings.TrimSpace(fmt.Sprintf("%v", c.Locals("userId")))
-	if userID == "" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	digits := normalizePHLocalNumber(req.PhoneNumber)
@@ -104,7 +104,7 @@ func VerifyOTP(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "OTP must be 6 digits.", nil)
 	}
 
-	verifyErr := repository.VerifyOTP(userID, toE164(digits), code)
+	verifyErr := repository.VerifyOTP(userId, toE164(digits), code)
 	if verifyErr != nil {
 		switch {
 		case errors.Is(verifyErr, repository.ErrOTPNotFound):

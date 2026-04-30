@@ -85,9 +85,9 @@ func getOptionalRequesterRoleFromSession(c *fiber.Ctx) string {
 }
 
 func MeProfile(c *fiber.Ctx) error {
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	listingsPage, err := parseProfileSectionPage(c, "listings")
@@ -289,9 +289,9 @@ func ProfileById(c *fiber.Ctx) error {
 }
 
 func UpdateMeProfile(c *fiber.Ctx) error {
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	var body model.UpdateProfileBody
@@ -318,9 +318,9 @@ func UpdateMeProfile(c *fiber.Ctx) error {
 }
 
 func UpdateMeProfileImages(c *fiber.Ctx) error {
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	var body model.UpdateProfileImagesBody
@@ -347,9 +347,9 @@ func UpdateMeProfileImages(c *fiber.Ctx) error {
 }
 
 func SubmitMeVerification(c *fiber.Ctx) error {
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	var body model.SubmitVerificationBody
@@ -371,9 +371,9 @@ func SubmitMeVerification(c *fiber.Ctx) error {
 }
 
 func DeactivateMeProfile(c *fiber.Ctx) error {
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	if err := repository.DeactivateAccount(userId); err != nil {

@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -12,7 +10,10 @@ import (
 )
 
 func GetNotifications(c *fiber.Ctx) error {
-	userId := strings.TrimSpace(fmt.Sprintf("%v", c.Locals("userId")))
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
+	}
 	if userId == "" || userId == "%!v(<nil>)" {
 		return SendErrorResponse(c, 401, "User is not authenticated", nil)
 	}
@@ -21,25 +22,9 @@ func GetNotifications(c *fiber.Ctx) error {
 	hasOffsetParam := strings.TrimSpace(c.Query("offset")) != ""
 	hasPagination := hasLimitParam || hasOffsetParam
 
-	limit := 15
-	if hasPagination && hasLimitParam {
-		parsedLimit, parseErr := strconv.Atoi(strings.TrimSpace(c.Query("limit")))
-		if parseErr != nil || parsedLimit <= 0 {
-			return SendErrorResponse(c, 400, "Limit must be a positive integer", parseErr)
-		}
-		if parsedLimit > 100 {
-			parsedLimit = 100
-		}
-		limit = parsedLimit
-	}
-
-	offset := 0
-	if hasPagination && hasOffsetParam {
-		parsedOffset, parseErr := strconv.Atoi(strings.TrimSpace(c.Query("offset")))
-		if parseErr != nil || parsedOffset < 0 {
-			return SendErrorResponse(c, 400, "Offset must be a non-negative integer", parseErr)
-		}
-		offset = parsedOffset
+	limit, offset, err := ParsePagination(c, 15, 100)
+	if err != nil {
+		return SendErrorResponse(c, 400, err.Error(), nil)
 	}
 
 	unreadCount, err := repository.GetUnreadNotificationCountByUser(userId)
@@ -100,7 +85,10 @@ func GetNotifications(c *fiber.Ctx) error {
 }
 
 func MarkAllNotificationsRead(c *fiber.Ctx) error {
-	userId := strings.TrimSpace(fmt.Sprintf("%v", c.Locals("userId")))
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
+	}
 	if userId == "" || userId == "%!v(<nil>)" {
 		return SendErrorResponse(c, 401, "User is not authenticated", nil)
 	}
@@ -113,7 +101,10 @@ func MarkAllNotificationsRead(c *fiber.Ctx) error {
 }
 
 func MarkNotificationRead(c *fiber.Ctx) error {
-	userId := strings.TrimSpace(fmt.Sprintf("%v", c.Locals("userId")))
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
+	}
 	if userId == "" || userId == "%!v(<nil>)" {
 		return SendErrorResponse(c, 401, "User is not authenticated", nil)
 	}
