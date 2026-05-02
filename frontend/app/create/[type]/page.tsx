@@ -10,7 +10,7 @@ interface PageProps {
   params: Promise<{ type: string }>;
 }
 
-const VALID_TYPES: ListingType[] = ['sell', 'rent', 'service'];
+const VALID_TYPES: ListingType[] = ['SELL', 'RENT', 'SERVICE'];
 
 export default function CreateListingTypePage({ params }: PageProps) {
   const { type } = use(params);

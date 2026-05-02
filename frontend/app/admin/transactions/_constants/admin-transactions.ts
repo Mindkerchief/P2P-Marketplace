@@ -4,11 +4,11 @@ import {
   Wrench
 } from 'lucide-react';
 
-import type { ListingTypeU } from '@/types/listings';
+import type { ListingType } from '@/types/listings';
 import { TransactionStatus } from '../_types/admin-transactions';
 
 export const TYPE_CONFIG: Record<
-  ListingTypeU,
+  ListingType,
   { label: string; cls: string; Icon: React.ElementType }
 > = {
   SELL: {

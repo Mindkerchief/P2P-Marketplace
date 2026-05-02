@@ -153,7 +153,7 @@ export interface ServiceFormData {
 
 // ─── Per-type config ────────────────────────────────────────────────────────────
 export const FORM_CONFIG = {
-  sell: {
+  SELL: {
     label: 'Sell an Item',
     accentCls: 'text-stone-700 dark:text-stone-300',
     accentBg: 'bg-stone-100 dark:bg-stone-800/60',
@@ -165,7 +165,7 @@ export const FORM_CONFIG = {
     badgeDot: 'bg-stone-800 dark:bg-stone-200',
     steps: ['Basic Info', 'Item Details', 'Location & Photos'] as const,
   },
-  rent: {
+  RENT: {
     label: 'Rent Out',
     accentCls: 'text-teal-700 dark:text-teal-400',
     accentBg: 'bg-teal-50 dark:bg-teal-950/40',
@@ -176,7 +176,7 @@ export const FORM_CONFIG = {
     badgeDot: 'bg-teal-600',
     steps: ['Basic Info', 'Rental Terms', 'Location & Photos'] as const,
   },
-  service: {
+  SERVICE: {
     label: 'Offer a Service',
     accentCls: 'text-violet-700 dark:text-violet-400',
     accentBg: 'bg-violet-50 dark:bg-violet-950/40',
@@ -1326,14 +1326,14 @@ export default function ListingForm({
       };
     } = {};
 
-    if (type === 'sell') {
+    if (type === 'SELL') {
       typeSpecific.sellData = {
         condition,
         deliveryMethod,
       };
     }
 
-    if (type === 'rent') {
+    if (type === 'RENT') {
       typeSpecific.rentData = {
         minPeriod,
         availability,
@@ -1343,7 +1343,7 @@ export default function ListingForm({
       };
     }
 
-    if (type === 'service') {
+    if (type === 'SERVICE') {
       typeSpecific.serviceData = {
         availability,
         turnaround,
@@ -1666,9 +1666,9 @@ export default function ListingForm({
             minLength={LISTING_LIMITS.titleMinLength}
             maxLength={LISTING_LIMITS.titleMaxLength}
             placeholder={
-              type === 'sell'
+              type === 'SELL'
                 ? 'e.g. MacBook Pro M2 2023 — Space Gray 16"'
-                : type === 'rent'
+                : type === 'RENT'
                   ? 'e.g. Studio Unit for Rent — Fully Furnished'
                   : 'e.g. Professional Aircon Cleaning & Repair'
             }
@@ -1749,7 +1749,7 @@ export default function ListingForm({
       <Section title="About This Listing">
         <div>
           <FieldLabel required>
-            {type === 'service'
+            {type === 'SERVICE'
               ? 'Describe your service'
               : 'Describe the item / property'}
           </FieldLabel>
@@ -1761,9 +1761,9 @@ export default function ListingForm({
               setDesc(nextValue);
             }}
             placeholder={
-              type === 'sell'
+              type === 'SELL'
                 ? 'Include brand, model, specs, usage history, reason for selling, and any known issues...'
-                : type === 'rent'
+                : type === 'RENT'
                   ? "Describe the property — features, nearby landmarks, house rules, and what's included..."
                   : 'Describe your service — experience, what clients can expect, tools used, process...'
             }
@@ -1786,7 +1786,7 @@ export default function ListingForm({
 
   // ── Step 1 — Type-specific ───────────────────────────────────────────────────
   const renderS1 = () => {
-    if (type === 'sell')
+    if (type === 'SELL')
       return (
         <>
           {/* Condition */}
@@ -1864,7 +1864,7 @@ export default function ListingForm({
         </>
       );
 
-    if (type === 'rent') {
+    if (type === 'RENT') {
       const rentCalColors: BookingCalendarColors = {
         solid: 'bg-teal-600',
         rangeFill: 'bg-teal-100 dark:bg-teal-900/25',
@@ -2211,7 +2211,7 @@ export default function ListingForm({
           <h1 className="text-xl sm:text-2xl font-bold text-white">
             {isEdit
               ? 'Update your listing details'
-              : `List something to ${type === 'sell' ? 'sell' : type === 'rent' ? 'rent out' : 'offer'}`}
+              : `List something to ${type === 'SELL' ? 'SELL' : type === 'RENT' ? 'rent out' : 'offer'}`}
           </h1>
           <p className="text-stone-400 text-sm mt-1">
             {isEdit

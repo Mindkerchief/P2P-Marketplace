@@ -1,4 +1,4 @@
-import type { ListingTypeU } from '@/types/listings';
+import type { ListingType } from '@/types/listings';
 
 export type ListingStatus =
   | 'AVAILABLE'
@@ -24,7 +24,7 @@ export type SortField =
 export interface AdminListing {
   id: string;
   title: string;
-  type: ListingTypeU;
+  type: ListingType;
   category: string;
   price: number;
   unit: string;
@@ -47,7 +47,7 @@ export interface AdminListing {
 export type AdminListingRecord = {
   id: string;
   title: string;
-  type: ListingTypeU;
+  type: ListingType;
   category: string;
   price: number;
   unit: string;

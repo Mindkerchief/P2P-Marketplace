@@ -64,13 +64,13 @@ import {
 function getDefaultExtra(listing: PostCardProps): ExtraDetail {
   return {
     description: `${listing.title} available in ${listing.location}. Posted ${listing.postedAt}. Contact the seller for more details.`,
-    condition: listing.type === 'sell' ? 'Good' : '',
+    condition: listing.type === 'SELL' ? 'Good' : '',
     images: [listing.imageUrl, listing.imageUrl, listing.imageUrl],
     features: [],
     transactionCount: 0,
     reviewCount: 0,
     deliveryMethod:
-      listing.type === 'service' ? 'On-site service' : 'Meet-up or Delivery',
+      listing.type === 'SERVICE' ? 'On-site service' : 'Meet-up or Delivery',
     daysOff: [],
     timeWindows: [],
     arrangement: '',
@@ -213,7 +213,7 @@ export default function ListingPage() {
       id: '',
       title: '',
       price: 0,
-      type: 'sell',
+      type: 'SELL',
       location: '',
       postedAt: '',
       imageUrl: '',
@@ -319,9 +319,9 @@ export default function ListingPage() {
     user?.firstName &&
     `${user.firstName} ${user.lastName}`.trim() === listing.seller.name
   );
-  const isSell = listing.type === 'sell';
-  const isRent = listing.type === 'rent';
-  const isService = listing.type === 'service';
+  const isSell = listing.type === 'SELL';
+  const isRent = listing.type === 'RENT';
+  const isService = listing.type === 'SERVICE';
   const listingStatus = (listing.status ?? '').trim().toLowerCase();
   const listingSellStatus = (listing.sellStatus ?? '').trim().toLowerCase();
   const isUnavailableState = listingStatus === 'unavailable';

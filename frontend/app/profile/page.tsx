@@ -121,9 +121,9 @@ function ProfileReviewCard({ review }: { review: ProfileReviewItem }) {
       : `/profile?userId=${reviewerId}`;
   const listingTypeLabel = (() => {
     const type = (review.listing.type ?? '').trim().toLowerCase();
-    if (type === 'sell') return 'For Sale';
-    if (type === 'rent') return 'For Rent';
-    if (type === 'service') return 'Service';
+    if (type === 'SELL') return 'For Sale';
+    if (type === 'RENT') return 'For Rent';
+    if (type === 'SERVICE') return 'Service';
     return '';
   })();
 
@@ -609,7 +609,7 @@ export default function ProfilePage() {
   const bookedListings = visibleUserListings.filter((l) => {
     const type = (l.type ?? '').toLowerCase();
     return (
-      (type === 'rent' || type === 'service') && Boolean(l.hasActiveBooking)
+      (type === 'RENT' || type === 'SERVICE') && Boolean(l.hasActiveBooking)
     );
   });
   const visibleBookmarkListings = bookmarkListings.filter(

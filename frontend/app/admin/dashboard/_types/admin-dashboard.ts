@@ -1,4 +1,4 @@
-import type { ListingTypeU } from "@/types/listings";
+import type { ListingType } from "@/types/listings";
 
 export type AdminDashboardStats = {
   totalUsers: number;
@@ -25,7 +25,7 @@ export type AdminWeeklyNewUsers = {
 };
 
 export type AdminListingTypeBreakdown = {
-  type: ListingTypeU;
+  type: ListingType;
   count: number;
   pct: number;
 };

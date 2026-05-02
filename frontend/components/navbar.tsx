@@ -51,9 +51,9 @@ import { useUser } from '@/utils/UserContext';
 // ─── Tab config ────────────────────────────────────────────────────────────────
 const TABS = [
   { label: 'All', value: 'all', icon: LayoutGrid },
-  { label: 'Buy', value: 'sell', icon: Tag },
-  { label: 'Rent', value: 'rent', icon: Store },
-  { label: 'Services', value: 'service', icon: Wrench },
+  { label: 'Buy', value: 'SELL', icon: Tag },
+  { label: 'Rent', value: 'RENT', icon: Store },
+  { label: 'Services', value: 'SERVICE', icon: Wrench },
 ];
 
 // ─── Center tabs (needs Suspense because of useSearchParams) ───────────────────

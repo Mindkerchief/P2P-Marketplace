@@ -94,7 +94,7 @@ func GetListingEditById(c *fiber.Ctx) error {
 		data["availability"] = listing.AvailableFrom.Format("2006-01-02")
 	}
 
-	if listing.Type == "rent" {
+	if listing.Type == "RENT" {
 		if listing.MinRentalPeriod > 0 {
 			data["minPeriod"] = strconv.Itoa(listing.MinRentalPeriod)
 		}
@@ -235,7 +235,7 @@ func GetListingById(c *fiber.Ctx) error {
 	}
 
 	switch listing.Type {
-	case "rent":
+	case "RENT":
 		extra["minPeriod"] = formatMinPeriod(listing.MinRentalPeriod, listing.PriceUnit)
 		if listing.AvailableFrom != nil {
 			extra["available_from"] = listing.AvailableFrom.Format("2006-01-02")
@@ -244,7 +244,7 @@ func GetListingById(c *fiber.Ctx) error {
 		extra["deposit"] = listing.Deposit
 		extra["amenities"] = included
 		extra["daysOff"] = daysOff
-	case "service":
+	case "SERVICE":
 		if listing.AvailableFrom != nil {
 			extra["available_from"] = listing.AvailableFrom.Format("2006-01-02")
 			extra["availability"] = listing.AvailableFrom.Format("Jan 02, 2006")

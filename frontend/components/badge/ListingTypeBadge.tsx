@@ -1,7 +1,5 @@
 import { cn } from '@/lib/utils';
-import type { ListingType } from '@/types/messaging';
-
-type LowerListingType = 'sell' | 'rent' | 'service';
+import type { ListingType } from '@/types/listings';
 
 type BadgeVariant = 'soft' | 'solid';
 
@@ -43,7 +41,7 @@ const TYPE_ALIASES: Record<string, 'SELL' | 'RENT' | 'SERVICE'> = {
 };
 
 function normalizeListingType(
-  type: ListingType | LowerListingType | string | null | undefined,
+  type: ListingType | string | null | undefined,
 ): 'SELL' | 'RENT' | 'SERVICE' | '' {
   const normalized = String(type ?? '')
     .trim()
@@ -74,7 +72,7 @@ function isSoldStatus(value?: string): boolean {
 }
 
 interface ListingTypeBadgeProps {
-  type: ListingType | LowerListingType | string | null | undefined;
+  type: ListingType | string | null | undefined;
   status?: string;
   sellStatus?: string;
   variant?: BadgeVariant;
