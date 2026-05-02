@@ -38,6 +38,7 @@ import {
   deleteAdminUser
 } from '@/services/adminUsersService';
 import { useConfirmDialog } from '@/utils/ConfirmDialogContext';
+import { formatDateTime, formatTime12h } from '@/utils/string-builder';
 
 import type {
   VerifStatus,
@@ -71,29 +72,6 @@ function getCurrentAdminSnapshot(): { fullName: string; email: string } | null {
   } catch {
     return null;
   }
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-function formatDateTime(value?: string | null): string {
-  if (!value) return 'Never';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Never';
-  return date.toLocaleDateString('en-PH', {
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric',
-  });
-}
-
-function formatTime12h(value?: string | null): string {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleTimeString('en-PH', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────

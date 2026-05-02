@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { getListingDetailById } from '@/services/listingService';
 import { openOrCreateConversationFromListing } from '@/services/messagingService';
 import { useUser } from '@/utils/UserContext';
+import { formatDateSeparator } from '@/utils/string-builder';
 
 import MessageBubble from './_components/MessageBubble';
 import { MessageEditModal } from './_components/MessageEditModal';
@@ -37,21 +38,6 @@ import {
   reactToMessage,
   sendMessage,
 } from './_services/conversation';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatDateSeparator(iso: string): string {
-  const date = new Date(iso);
-  const now = new Date();
-  const diff = now.getDate() - date.getDate();
-  if (diff === 0 && now.getMonth() === date.getMonth()) return 'Today';
-  if (diff === 1) return 'Yesterday';
-  return date.toLocaleDateString('en-PH', {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-  });
-}
 
 function isSameDay(a: string, b: string) {
   return new Date(a).toDateString() === new Date(b).toDateString();
@@ -101,8 +87,8 @@ function splitSellerName(fullName: string): {
 function toListingType(
   type: PostCardProps['type'],
 ): 'SELL' | 'RENT' | 'SERVICE' {
-  if (type === 'rent') return 'RENT';
-  if (type === 'service') return 'SERVICE';
+  if (type === 'RENT') return 'RENT';
+  if (type === 'SERVICE') return 'SERVICE';
   return 'SELL';
 }
 
@@ -129,8 +115,6 @@ function toDraftConversation(listing: PostCardProps): Conversation {
     isSeller: false,
   };
 }
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ConversationPage() {
   const params = useParams();

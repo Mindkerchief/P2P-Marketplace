@@ -29,7 +29,11 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { formatPrice } from '@/utils/string-builder';
+import {
+  formatPrice,
+  formatDateTime,
+  formatDateRange
+} from '@/utils/string-builder';
 
 import { TYPE_CONFIG, STATUS_CONFIG } from './_constants/admin-transactions';
 import type {
@@ -38,26 +42,6 @@ import type {
   SortField
 } from './_types/admin-transactions';
 import { getAdminTransactions } from './_services/admin-transactions';
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-function formatDateTime(value?: string | null): string {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('en-PH', {
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric',
-  });
-}
-
-function formatDateRange(start?: string | null, end?: string | null): string {
-  if (!start || !end) return 'N/A';
-  const s = new Date(start);
-  const e = new Date(end);
-  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return 'N/A';
-  return `${s.toLocaleDateString('en-PH', { month: 'short', day: '2-digit', year: 'numeric' })} - ${e.toLocaleDateString('en-PH', { month: 'short', day: '2-digit', year: 'numeric' })}`;
-}
 
 function buildScheduleUnitsLabel(tx: AdminTransactionRecord): string {
   const units = Math.max(1, Number(tx.schedule_units || 1));
