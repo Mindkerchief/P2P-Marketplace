@@ -38,7 +38,7 @@ import { ThemeModeSwitch } from '@/components/ThemeModeSwitch';
 import ImageSafe from '@/components/image/ImageSafe';
 import VerificationBadge from '@/components/badge/VerificationBadge';
 import { cn } from '@/lib/utils';
-import { getConversations } from '@/services/messagingService';
+import { getUnreadMessageCount } from '@/services/messagingService';
 import {
   getNotificationsPage,
   markAllNotificationsRead,
@@ -51,9 +51,9 @@ import { useUser } from '@/utils/UserContext';
 // ─── Tab config ────────────────────────────────────────────────────────────────
 const TABS = [
   { label: 'All', value: 'all', icon: LayoutGrid },
-  { label: 'Buy', value: 'sell', icon: Tag },
-  { label: 'Rent', value: 'rent', icon: Store },
-  { label: 'Services', value: 'service', icon: Wrench },
+  { label: 'Buy', value: 'SELL', icon: Tag },
+  { label: 'Rent', value: 'RENT', icon: Store },
+  { label: 'Services', value: 'SERVICE', icon: Wrench },
 ];
 
 // ─── Center tabs (needs Suspense because of useSearchParams) ───────────────────
@@ -455,14 +455,10 @@ export default function Navbar() {
     }
 
     try {
-      // TODO: Optimize by having a dedicated endpoint that returns unread status instead of fetching all conversations.
-      const conversations = await getConversations();
-      const hasUnread = conversations.some(
-        (conversation) => (conversation.unreadCount ?? 0) > 0,
-      );
-      setHasUnreadMessages(hasUnread);
+      const unreadCount = await getUnreadMessageCount();
+      setHasUnreadMessages(unreadCount > 0);
     } catch {
-      // Keep current state on transient errors.
+      toast.error('Failed to fetch unread message count.', { position: 'top-center' });
     }
   }, [isAuth]);
 

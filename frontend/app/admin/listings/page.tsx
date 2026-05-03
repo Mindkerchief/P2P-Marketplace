@@ -29,39 +29,28 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/utils/string-builder';
 import { useConfirmDialog } from '@/utils/ConfirmDialogContext';
+import { formatDateTime } from '@/utils/string-builder';
 
 // TODO: The same as the transactions constants
 import { TYPE_CONFIG } from '../transactions/_constants/admin-transactions';
 import { STATUS_CONFIG } from './_constants/admin-listings';
-import {
-  type ListingStatus,
-  type SortDir,
-  type SortField,
-  type AdminListing,
-  type AdminListingRecord
+import type {
+  ListingStatus,
+  SortDir,
+  SortField,
+  AdminListing,
+  AdminListingRecord
 } from './_types/admin-listings';
 import {
   deleteAdminListing,
   getAdminListings,
-  toggleAdminListingVisibility,
+  toggleAdminListingVisibility
 } from './_services/admin-listings';
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-function formatDateTime(value?: string | null): string {
-  if (!value) return '—';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('en-PH', {
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric',
-  });
-}
 
 function getCurrentAdminDisplayName(): string {
   if (typeof window === 'undefined') return '';

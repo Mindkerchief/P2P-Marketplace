@@ -8,10 +8,10 @@ import {
   Wrench,
 } from 'lucide-react';
 
-import {
-  type AdminDashboardStats,
-  type AdminListingTypeBreakdown,
-  type AdminWeeklyNewUsers,
+import type {
+  AdminDashboardStats,
+  AdminListingTypeBreakdown,
+  AdminWeeklyNewUsers,
 } from "../_types/admin-dashboard";
 
 export const STAT_CARD_META = [

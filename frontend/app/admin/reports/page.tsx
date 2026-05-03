@@ -11,7 +11,7 @@ import {
   RotateCw,
   Search,
   X,
-  XCircle,
+  XCircle
 } from 'lucide-react';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -27,11 +27,12 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/utils/string-builder';
 import { useUser } from '@/utils/UserContext';
+import { formatDateTime } from '@/utils/string-builder';
 
 import { STATUS_CONFIG } from './_constants/admin-reports';
 import {
@@ -224,18 +225,6 @@ export default function ReportsPage() {
   const pendingCount = reports.filter((r) => r.status === 'PENDING').length;
   const resolvedCount = reports.filter((r) => r.status === 'RESOLVED').length;
   const dismissedCount = reports.filter((r) => r.status === 'DISMISSED').length;
-
-  // ── Helpers ───────────────────────────────────────────────────────────────────
-  function formatDateTime(value?: string | null): string {
-    if (!value) return '—';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '—';
-    return date.toLocaleDateString('en-PH', {
-      month: 'short',
-      day: '2-digit',
-      year: 'numeric',
-    });
-  }
 
   // ── Actions ───────────────────────────────────────────────────────────────────
   async function handleModalSubmit(

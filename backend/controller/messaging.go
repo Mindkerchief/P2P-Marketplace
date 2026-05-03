@@ -16,14 +16,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func getAuthenticatedUserId(c *fiber.Ctx) (string, error) {
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return "", fmt.Errorf("User is not authenticated")
-	}
-	return userId, nil
-}
-
 func toAbsoluteAssetURL(baseURL, raw string) string {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
@@ -231,7 +223,7 @@ func parseTimeWindows(raw string) []map[string]string {
 }
 
 func GetConversations(c *fiber.Ctx) error {
-	userId, err := getAuthenticatedUserId(c)
+	userId, err := GetAuthenticatedUserId(c)
 	if err != nil {
 		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
@@ -246,25 +238,9 @@ func GetConversations(c *fiber.Ctx) error {
 	hasOffsetParam := strings.TrimSpace(c.Query("offset")) != ""
 	hasPagination := hasLimitParam || hasOffsetParam
 
-	limit := 15
-	if hasPagination && hasLimitParam {
-		parsedLimit, parseErr := strconv.Atoi(strings.TrimSpace(c.Query("limit")))
-		if parseErr != nil || parsedLimit <= 0 {
-			return SendErrorResponse(c, 400, "Limit must be a positive integer", parseErr)
-		}
-		if parsedLimit > 100 {
-			parsedLimit = 100
-		}
-		limit = parsedLimit
-	}
-
-	offset := 0
-	if hasPagination && hasOffsetParam {
-		parsedOffset, parseErr := strconv.Atoi(strings.TrimSpace(c.Query("offset")))
-		if parseErr != nil || parsedOffset < 0 {
-			return SendErrorResponse(c, 400, "Offset must be a non-negative integer", parseErr)
-		}
-		offset = parsedOffset
+	limit, offset, err := ParsePagination(c, 15, 100)
+	if err != nil {
+		return SendErrorResponse(c, 400, err.Error(), nil)
 	}
 
 	if !hasPagination {
@@ -301,13 +277,29 @@ func GetConversations(c *fiber.Ctx) error {
 	})
 }
 
+func GetUnreadMessageCount(c *fiber.Ctx) error {
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
+	}
+
+	count, err := repository.GetUnreadMessageCount(userId)
+	if err != nil {
+		return SendErrorResponse(c, 500, err.Error(), err)
+	}
+
+	return SendSuccessResponse(c, 200, "Unread message count fetched successfully", map[string]any{
+		"unreadCount": count,
+	})
+}
+
 func GetConversation(c *fiber.Ctx) error {
 	conversationId := strings.TrimSpace(c.Params("id"))
 	if conversationId == "" {
 		return SendErrorResponse(c, 400, "Conversation ID is required", nil)
 	}
 
-	userId, err := getAuthenticatedUserId(c)
+	userId, err := GetAuthenticatedUserId(c)
 	if err != nil {
 		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
@@ -348,7 +340,7 @@ func GetMessages(c *fiber.Ctx) error {
 		offset = parsedOffset
 	}
 
-	userId, err := getAuthenticatedUserId(c)
+	userId, err := GetAuthenticatedUserId(c)
 	if err != nil {
 		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
@@ -436,7 +428,7 @@ func CreateConversationFromListing(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Listing ID is required", nil)
 	}
 
-	userId, err := getAuthenticatedUserId(c)
+	userId, err := GetAuthenticatedUserId(c)
 	if err != nil {
 		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
@@ -541,7 +533,7 @@ func UpdateConversationOfferByOwner(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, fmt.Sprintf("Offer message must not exceed %d characters", config.MessageContentMaxLength), nil)
 	}
 
-	userId, err := getAuthenticatedUserId(c)
+	userId, err := GetAuthenticatedUserId(c)
 	if err != nil {
 		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
@@ -607,7 +599,7 @@ func UpdateConversationScheduleByOwner(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, fmt.Sprintf("Schedule message must not exceed %d characters", config.MessageContentMaxLength), nil)
 	}
 
-	userId, err := getAuthenticatedUserId(c)
+	userId, err := GetAuthenticatedUserId(c)
 	if err != nil {
 		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
@@ -666,7 +658,7 @@ func SendMessage(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Message content is required", nil)
 	}
 
-	userId, err := getAuthenticatedUserId(c)
+	userId, err := GetAuthenticatedUserId(c)
 	if err != nil {
 		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
@@ -752,7 +744,7 @@ func ReactToMessage(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Invalid request body. Please contact support.", err)
 	}
 
-	userId, err := getAuthenticatedUserId(c)
+	userId, err := GetAuthenticatedUserId(c)
 	if err != nil {
 		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
@@ -800,7 +792,7 @@ func EditMessage(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Message content is required", nil)
 	}
 
-	userId, err := getAuthenticatedUserId(c)
+	userId, err := GetAuthenticatedUserId(c)
 	if err != nil {
 		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
@@ -835,7 +827,7 @@ func DeleteMessage(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Conversation ID and message ID are required", nil)
 	}
 
-	userId, err := getAuthenticatedUserId(c)
+	userId, err := GetAuthenticatedUserId(c)
 	if err != nil {
 		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
@@ -877,7 +869,7 @@ func MarkMessagesRead(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Conversation ID is required", nil)
 	}
 
-	userId, err := getAuthenticatedUserId(c)
+	userId, err := GetAuthenticatedUserId(c)
 	if err != nil {
 		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
@@ -919,7 +911,7 @@ func DeleteConversation(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Conversation ID is required", nil)
 	}
 
-	userId, err := getAuthenticatedUserId(c)
+	userId, err := GetAuthenticatedUserId(c)
 	if err != nil {
 		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
@@ -937,7 +929,7 @@ func ToggleConversationDealAgreement(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Conversation ID is required", nil)
 	}
 
-	userId, err := getAuthenticatedUserId(c)
+	userId, err := GetAuthenticatedUserId(c)
 	if err != nil {
 		return SendErrorResponse(c, 401, err.Error(), nil)
 	}

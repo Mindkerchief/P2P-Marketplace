@@ -1,4 +1,4 @@
-import { type ListingTypeU } from '@/types/listings';
+import type { ListingType } from '@/types/listings';
 
 export type MessageStatus = 'SENT' | 'DELIVERED' | 'READ';
 
@@ -57,7 +57,7 @@ export interface ConversationListing {
   daysOff?: string[];
   timeWindows?: { startTime: string; endTime: string }[];
   priceUnit?: string;
-  listingType: ListingTypeU;
+  listingType: ListingType;
   imageUrl?: string | null;
   status: string;
 }

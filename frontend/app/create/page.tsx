@@ -8,7 +8,7 @@ import { useUser } from '@/utils/UserContext';
 
 const TYPES = [
   {
-    slug: 'sell',
+    slug: 'SELL',
     icon: Tag,
     label: 'Sell an Item',
     description:
@@ -30,7 +30,7 @@ const TYPES = [
     arrowCls: 'text-blue-500',
   },
   {
-    slug: 'rent',
+    slug: 'RENT',
     icon: Home,
     label: 'Rent Out Something',
     description:
@@ -52,7 +52,7 @@ const TYPES = [
     arrowCls: 'text-emerald-500',
   },
   {
-    slug: 'service',
+    slug: 'SERVICE',
     icon: Wrench,
     label: 'Offer a Service',
     description:

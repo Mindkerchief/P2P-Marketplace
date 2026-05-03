@@ -20,7 +20,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { ImageLink } from '@/components/image/ImageLink';
 import PostCard from '@/components/PostCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,8 +49,7 @@ import { useConfirmDialog } from '@/utils/ConfirmDialogContext';
 import {
   formatLastActive,
   formatMemberSince,
-  formatOverallRating,
-  formatPrice,
+  formatOverallRating
 } from '@/utils/string-builder';
 import { useUser } from '@/utils/UserContext';
 import { AUTH_LIMITS, isValidName } from '@/utils/validation';
@@ -67,6 +65,8 @@ import {
   deactivateProfile,
   getProfileData
 } from './_services/profile';
+import { AddListingCard } from './_components/AddListingCard';
+import { ProfileReviewCard } from './_components/ProfileReviewCard';
 
 export const SOLD_STATUSES = new Set(['sold']);
 export const PROFILE_SCROLL_BATCH_SIZE = 16;
@@ -83,128 +83,6 @@ function normalizeEditableProfile(
     locationCity: form.locationCity.trim(),
     locationBrgy: form.locationBrgy.trim(),
   };
-}
-
-function AddListingCard() {
-  return (
-    <Link href="/create" className="block group">
-      <div className="bg-white dark:bg-[#1c1f2e] rounded-lg overflow-hidden border border-dashed border-stone-300 dark:border-[#3a3e52] hover:-translate-y-1 hover:shadow-md transition-all duration-200 h-full">
-        <div className="relative aspect-square bg-stone-50 dark:bg-[#13151f] flex items-center justify-center">
-          <div className="w-11 h-11 rounded-full bg-stone-900 dark:bg-stone-200 text-white dark:text-stone-900 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform duration-200">
-            <Plus className="w-5 h-5" />
-          </div>
-        </div>
-        <div className="p-3">
-          <p className="text-stone-800 dark:text-stone-100 font-semibold text-sm leading-tight">
-            Add Listing
-          </p>
-          <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">
-            Post a new item or service
-          </p>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function ProfileReviewCard({ review }: { review: ProfileReviewItem }) {
-  const { user } = useUser();
-  const reviewerName =
-    (review.reviewer.name ?? '').trim() || 'Anonymous Reviewer';
-  const isReviewerVerified =
-    (review.reviewer.status ?? '').trim().toLowerCase() === 'verified';
-  const currentUserId = (user?.userId ?? '').trim();
-  const reviewerId = (review.reviewer.id ?? '').trim();
-  const reviewerProfileHref =
-    reviewerId !== '' && reviewerId === currentUserId
-      ? '/profile'
-      : `/profile?userId=${reviewerId}`;
-  const listingTypeLabel = (() => {
-    const type = (review.listing.type ?? '').trim().toLowerCase();
-    if (type === 'sell') return 'For Sale';
-    if (type === 'rent') return 'For Rent';
-    if (type === 'service') return 'Service';
-    return '';
-  })();
-
-  return (
-    <div className="bg-white dark:bg-[#1c1f2e] rounded-lg border border-stone-200 dark:border-[#2a2d3e] shadow-sm p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <ImageLink
-            href={reviewerProfileHref}
-            src={review.reviewer.profileImageUrl}
-            type="profile"
-            label={reviewerName}
-            className="w-9 h-9 shrink-0"
-          />
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <p className="text-sm font-bold text-stone-900 dark:text-stone-100 truncate">
-                {reviewerName}
-              </p>
-              <VerificationBadge verified={isReviewerVerified} />
-            </div>
-            <p className="text-xs text-stone-400 dark:text-stone-500">
-              {review.reviewDate}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1 shrink-0">
-          {[1, 2, 3, 4, 5].map((value) => (
-            <Star
-              key={value}
-              className={cn(
-                'w-3.5 h-3.5',
-                value <= review.rating
-                  ? 'fill-amber-400 text-amber-400'
-                  : 'text-stone-300 dark:text-stone-600',
-              )}
-            />
-          ))}
-        </div>
-      </div>
-
-      {review.comment && review.comment.trim() !== '' && (
-        <p className="mt-3 text-sm leading-relaxed text-stone-700 dark:text-stone-200">
-          {review.comment}
-        </p>
-      )}
-
-      <div className="mt-3 flex items-center gap-3 rounded-lg border border-stone-200 dark:border-[#2a2d3e] bg-stone-50 dark:bg-[#13151f] p-2.5 hover:border-stone-300 dark:hover:border-[#3a3e52] transition-colors">
-        <ImageLink
-          href={`/listing/${review.listing.id}`}
-          src={review.listing.imageUrl}
-          type="thumbnail"
-          label={review.listing.title}
-          className="w-15 h-15"
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 line-clamp-1">
-              {review.listing.title}
-            </p>
-            {listingTypeLabel && (
-              <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300">
-                {listingTypeLabel}
-              </span>
-            )}
-          </div>
-          <p className="text-sm font-bold text-amber-700 dark:text-amber-500 mt-0.5">
-            {formatPrice(review.listing.price)}
-            <span className="text-[11px] font-normal text-stone-400 dark:text-stone-500 ml-1">
-              {review.listing.priceUnit}
-            </span>
-          </p>
-          {/* Listing Location */}
-          <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 truncate">
-            {review.listing.location || 'Location unavailable'}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ─── Image upload hook with remove support ────────────────────────────────────
@@ -260,7 +138,6 @@ function useImageUpload(
   return { src, file, trigger, remove, inputRef, onFileChange };
 }
 
-// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -609,7 +486,7 @@ export default function ProfilePage() {
   const bookedListings = visibleUserListings.filter((l) => {
     const type = (l.type ?? '').toLowerCase();
     return (
-      (type === 'rent' || type === 'service') && Boolean(l.hasActiveBooking)
+      (type === 'RENT' || type === 'SERVICE') && Boolean(l.hasActiveBooking)
     );
   });
   const visibleBookmarkListings = bookmarkListings.filter(

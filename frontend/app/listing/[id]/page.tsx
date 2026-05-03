@@ -1,29 +1,18 @@
 'use client';
 
 import {
-  AlertTriangle,
-  Bookmark,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
-  Clock,
   Expand,
   Eye,
-  EyeOff,
   Flag,
   MapPin,
-  MessageCircle,
-  Package,
-  Pen,
   Phone,
-  Share2,
   Star,
-  Trash,
   Truck,
-  User,
-  Zap,
+  User
 } from 'lucide-react';
-import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -49,7 +38,6 @@ import { getListingDetailById } from '@/services/listingService';
 import { openOrCreateConversationFromListing } from '@/services/messagingService';
 import { getUserProfileData } from '@/services/profileService';
 import { useConfirmDialog } from '@/utils/ConfirmDialogContext';
-import { formatPrice, formatTimeAgo } from '@/utils/string-builder';
 import { useUser } from '@/utils/UserContext';
 
 import { ExtraDetail } from './_types/listings';
@@ -60,147 +48,27 @@ import {
   submitListingReport,
   toggleListingVisibility,
 } from './_services/listings';
+import { RentInfoCard } from './_components/RentInfoCard';
+import { ServiceInfoCard } from './_components/ServiceInfoCard';
+import { DisplayListingCard } from './_components/DisplayListingCard';
+import { MobileStickyButtons } from './_components/MobileStickyButtons';
 
 function getDefaultExtra(listing: PostCardProps): ExtraDetail {
   return {
     description: `${listing.title} available in ${listing.location}. Posted ${listing.postedAt}. Contact the seller for more details.`,
-    condition: listing.type === 'sell' ? 'Good' : '',
+    condition: listing.type === 'SELL' ? 'Good' : '',
     images: [listing.imageUrl, listing.imageUrl, listing.imageUrl],
     features: [],
     transactionCount: 0,
     reviewCount: 0,
     deliveryMethod:
-      listing.type === 'service' ? 'On-site service' : 'Meet-up or Delivery',
+      listing.type === 'SERVICE' ? 'On-site service' : 'Meet-up or Delivery',
     daysOff: [],
     timeWindows: [],
     arrangement: '',
   };
 }
 
-// ── Rent info card — shows data from form's "Rental Terms" step ───────────────
-function RentInfoCard({ extra }: { extra: ExtraDetail }) {
-  const hasData =
-    extra.minPeriod ||
-    extra.availability ||
-    extra.deposit ||
-    extra.amenities?.length;
-  if (!hasData) return null;
-
-  return (
-    <div className="bg-white dark:bg-[#1c1f2e] rounded-lg border border-stone-200 dark:border-[#2a2d3e] shadow-sm p-6">
-      <h2 className="font-bold text-stone-900 dark:text-stone-50 text-base mb-4">
-        Rental Terms
-      </h2>
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {extra.minPeriod && (
-            <div className="bg-stone-50 dark:bg-[#13151f] rounded-lg p-3">
-              <p className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-1">
-                Min. Period
-              </p>
-              <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">
-                {extra.minPeriod}
-              </p>
-            </div>
-          )}
-          {extra.deposit && (
-            <div className="bg-stone-50 dark:bg-[#13151f] rounded-lg p-3">
-              <p className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-1">
-                Deposit
-              </p>
-              <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">
-                {extra.deposit}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {extra.amenities && extra.amenities.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-widest mb-2.5">
-              Amenities & Features
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {extra.amenities.map((a) => (
-                <span
-                  key={a}
-                  className="text-sm bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 rounded-lg"
-                >
-                  {a}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Service info card — shows data from form's "Service Details" step ─────────
-function ServiceInfoCard({ extra }: { extra: ExtraDetail }) {
-  const hasData =
-    extra.turnaround ||
-    extra.serviceArea ||
-    extra.inclusions?.filter(Boolean).length;
-  if (!hasData) return null;
-
-  return (
-    <div className="bg-white dark:bg-[#1c1f2e] rounded-lg border border-stone-200 dark:border-[#2a2d3e] shadow-sm p-6">
-      <h2 className="font-bold text-stone-900 dark:text-stone-50 text-base mb-4">
-        Service Details
-      </h2>
-      <div className="flex flex-col gap-4">
-        {(extra.turnaround || extra.serviceArea) && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {extra.turnaround && (
-              <div className="bg-stone-50 dark:bg-[#13151f] rounded-lg p-3">
-                <p className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-1">
-                  Turnaround
-                </p>
-                <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-violet-500 shrink-0" />
-                  {extra.turnaround}
-                </p>
-              </div>
-            )}
-            {extra.serviceArea && (
-              <div className="bg-stone-50 dark:bg-[#13151f] rounded-lg p-3">
-                <p className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 uppercase tracking-widest mb-1">
-                  Service Area
-                </p>
-                <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-violet-500 shrink-0" />
-                  {extra.serviceArea}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {extra.inclusions && extra.inclusions.filter(Boolean).length > 0 && (
-          <div>
-            <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-widest mb-2.5">
-              What&apos;s Included
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {extra.inclusions.filter(Boolean).map((item) => (
-                <span
-                  key={item}
-                  className="text-sm bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 px-2.5 py-1 rounded-lg"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Main page ─────────────────────────────────────────────────────────────────
 export default function ListingPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -213,7 +81,7 @@ export default function ListingPage() {
       id: '',
       title: '',
       price: 0,
-      type: 'sell',
+      type: 'SELL',
       location: '',
       postedAt: '',
       imageUrl: '',
@@ -319,9 +187,9 @@ export default function ListingPage() {
     user?.firstName &&
     `${user.firstName} ${user.lastName}`.trim() === listing.seller.name
   );
-  const isSell = listing.type === 'sell';
-  const isRent = listing.type === 'rent';
-  const isService = listing.type === 'service';
+  const isSell = listing.type === 'SELL';
+  const isRent = listing.type === 'RENT';
+  const isService = listing.type === 'SERVICE';
   const listingStatus = (listing.status ?? '').trim().toLowerCase();
   const listingSellStatus = (listing.sellStatus ?? '').trim().toLowerCase();
   const isUnavailableState = listingStatus === 'unavailable';
@@ -778,7 +646,7 @@ export default function ListingPage() {
 
             {/* ── Listing card (mobile) ── */}
             <div className="md:hidden">
-              {displayListingCard(
+              {DisplayListingCard(
                 listing,
                 handleToggleBookmark,
                 isBookmarking,
@@ -923,7 +791,7 @@ export default function ListingPage() {
             <div className="sticky top-20">
               {/* ── Listing card (desktop) ── */}
               <div className="hidden md:flex mb-4">
-                {displayListingCard(
+                {DisplayListingCard(
                   listing,
                   handleToggleBookmark,
                   isBookmarking,
@@ -1063,7 +931,6 @@ export default function ListingPage() {
         onClose={() => setOfferOpen(false)}
       />
 
-      {/* ══ SCHEDULE REQUEST MODAL ══════════════════════════════════════════════ */}
       <ListingSchedule
         open={scheduleOpen}
         onClose={() => setScheduleOpen(false)}
@@ -1077,7 +944,6 @@ export default function ListingPage() {
         type={listing.type}
       />
 
-      {/* ══ REPORT MODAL ══════════════════════════════════════════════════════ */}
       {reportOpen && (
         <ReportForm
           open={reportOpen}
@@ -1099,323 +965,23 @@ export default function ListingPage() {
         />
       )}
 
-      {/* ── Mobile sticky bar ── */}
-      {!isOwnListing ? (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-[#1c1f2e] border-t border-stone-200 dark:border-[#2a2d3e] px-4 py-3 flex gap-3 shadow-lg">
-          {visitorUnavailableState ? (
-            <Button
-              variant={'outline'}
-              size={'lg'}
-              disabled
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full bg-stone-400/80 text-white text-sm font-bold cursor-not-allowed opacity-95"
-            >
-              <AlertTriangle className="w-4 h-4" /> Unavailable
-            </Button>
-          ) : isSold ? (
-            <Button
-              variant={'outline'}
-              size={'lg'}
-              disabled
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-full bg-emerald-600/90 text-white text-sm font-bold cursor-not-allowed opacity-95"
-            >
-              <CheckCircle className="w-4 h-4" /> Sold
-            </Button>
-          ) : (
-            <>
-              <Button
-                variant={'outline'}
-                size={'lg'}
-                onClick={handleMessage}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg border-2 border-stone-200 dark:border-[#2a2d3e] text-stone-700 dark:text-stone-200 text-sm font-semibold"
-              >
-                <MessageCircle className="w-4 h-4" /> Message
-              </Button>
-
-              <Button
-                size={'lg'}
-                onClick={handleBuy}
-                className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-white text-sm font-bold',
-                  isSell
-                    ? 'bg-orange-500 hover:bg-orange-600'
-                    : isRent
-                      ? 'bg-emerald-700 hover:bg-emerald-600'
-                      : 'bg-violet-700 hover:bg-violet-600',
-                )}
-              >
-                {/* className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg bg-[#3A4A6A] text-white text-sm font-bold"> */}
-                <Zap className="w-4 h-4" />
-                {isSell ? 'Offer' : isRent ? 'Rent' : 'Book'}
-              </Button>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-[#1c1f2e] border-t border-stone-200 dark:border-[#2a2d3e] px-4 py-3 flex gap-3 shadow-lg">
-          {isDeletedState || isSold ? (
-            <Button
-              disabled
-              className="flex-1 flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-stone-400/80 text-white text-sm font-bold cursor-not-allowed opacity-95"
-            >
-              <AlertTriangle className="w-4 h-4" /> Unavailable
-            </Button>
-          ) : (
-            <>
-              {/* Edit Listing Button */}
-              <Button
-                variant={'default'}
-                size={'lg'}
-                onClick={() => {
-                  router.push(`/listing/${id}/edit`);
-                }}
-                className="flex-1 flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 text-sm font-bold hover:opacity-90 transition-opacity"
-              >
-                <Pen className="w-4 h-4" />
-                Edit
-              </Button>
-
-              {/* Hide Listing Button */}
-              <Button
-                variant={'outline'}
-                size={'lg'}
-                onClick={handleListingVisibility}
-                disabled={toggling}
-                className="flex-1 flex rounded-lg border-stone-200 dark:border-[#2a2d3e] text-stone-700 dark:text-stone-200 bg-white dark:bg-transparent text-sm font-semibold hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-50 dark:hover:bg-[#252837] transition-all"
-              >
-                {isListingAvailable ? (
-                  <>
-                    <EyeOff className="w-4 h-4" /> Hide
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-4 h-4" /> Show
-                  </>
-                )}
-              </Button>
-
-              {/* Remove Listing Button */}
-              <Button
-                variant={'destructive'}
-                size={'lg'}
-                onClick={handleRemoveListing}
-                disabled={deleting}
-                className="flex-1 flex rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <Trash className="w-4 h-4" />
-                {deleting ? 'Removing...' : 'Remove'}
-              </Button>
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function displayListingCard(
-  listing: PostCardProps,
-  handleToggleBookmark: () => Promise<void>,
-  isBookmarking: boolean,
-  isBookmarked: boolean,
-  isOwnListing: boolean,
-  isDeletedState: boolean,
-  isSold: boolean,
-  router: AppRouterInstance,
-  id: string,
-  handleListingVisibility: () => Promise<void>,
-  toggling: boolean,
-  isListingAvailable: boolean,
-  handleRemoveListing: () => Promise<void>,
-  deleting: boolean,
-  visitorUnavailableState: boolean,
-  isSell: boolean,
-  handleBuy: () => void,
-  isRent: boolean,
-  isService: boolean,
-  handleMessage: () => Promise<void>,
-  messaging: boolean,
-) {
-  return (
-    <div className="bg-white dark:bg-[#1c1f2e] rounded-lg border border-stone-200 dark:border-[#2a2d3e] shadow-sm p-5">
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h1 className="text-md lg:text-lg font-bold text-stone-900 dark:text-stone-50 leading-tight">
-          {listing.title}
-        </h1>
-        <div className="flex gap-1.5 shrink-0">
-          <Button
-            variant={'secondary'}
-            onClick={handleToggleBookmark}
-            disabled={isBookmarking}
-            className={cn(
-              'w-9 h-9 rounded-lg border disabled:opacity-60 disabled:cursor-not-allowed',
-              isBookmarked
-                ? 'border-rose-200 bg-rose-50 dark:bg-rose-900/30 dark:border-rose-800 text-rose-500'
-                : 'bg-transparent text-stone-400 dark:text-stone-500',
-            )}
-          >
-            <Bookmark
-              className={cn('w-4 h-4', isBookmarked && 'fill-rose-500')}
-            />
-          </Button>
-          <Button
-            variant={'secondary'}
-            onClick={() =>
-              toast.info('Link copied to clipboard!', {
-                position: 'top-center',
-              })
-            }
-            className="w-9 h-9 rounded-lg bg-transparent border border-stone-200 dark:border-[#2a2d3e] text-stone-400 dark:text-stone-500"
-          >
-            <Share2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Price */}
-      <div className="flex items-baseline gap-1.5 mb-1">
-        <span className="text-xl lg:text-2xl font-extrabold text-amber-700 dark:text-amber-500">
-          {formatPrice(listing.price)}
-        </span>
-        {listing.priceUnit && (
-          <span className="text-black dark:text-white text-sm">
-            {listing.priceUnit}
-          </span>
-        )}
-      </div>
-
-      {/* Location + posted */}
-      <div className="flex flex-wrap items-center gap-3 text-sm text-black dark:text-white mb-4">
-        <span className="flex items-center gap-1">
-          <MapPin className="w-3 h-3" />
-          {listing.location}
-        </span>
-        <span className="flex items-center gap-1">
-          <Clock className="w-3 h-3" />
-          Posted {formatTimeAgo(listing.postedAt)}
-        </span>
-      </div>
-
-      {/* ── CTA buttons ── */}
-      {isOwnListing ? (
-        <div className="flex flex-col gap-3">
-          {isDeletedState || isSold ? (
-            <Button
-              disabled
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-stone-400/80 text-white text-sm font-bold cursor-not-allowed opacity-95"
-            >
-              <AlertTriangle className="w-4 h-4" /> Unavailable
-            </Button>
-          ) : (
-            <>
-              {/* Edit Listing Button */}
-              <Button
-                variant={'default'}
-                size={'lg'}
-                onClick={() => {
-                  router.push(`/listing/${id}/edit`);
-                }}
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 text-sm font-bold hover:opacity-90 transition-opacity"
-              >
-                <Pen className="w-4 h-4" />
-                Edit Listing
-              </Button>
-
-              {/* Hide Listing Button */}
-              <Button
-                variant={'outline'}
-                size={'lg'}
-                onClick={handleListingVisibility}
-                disabled={toggling}
-                className="rounded-lg border-stone-200 dark:border-[#2a2d3e] text-stone-700 dark:text-stone-200 bg-white dark:bg-transparent text-sm font-semibold hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-50 dark:hover:bg-[#252837] transition-all"
-              >
-                {isListingAvailable ? (
-                  <>
-                    <EyeOff className="w-4 h-4" /> Hide Listing
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-4 h-4" /> Show Listing
-                  </>
-                )}
-              </Button>
-
-              {/* Remove Listing Button */}
-              <Button
-                variant={'destructive'}
-                size={'lg'}
-                onClick={handleRemoveListing}
-                disabled={deleting}
-                className="rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <Trash className="w-4 h-4" />
-                {deleting ? 'Removing...' : 'Remove Listing'}
-              </Button>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {visitorUnavailableState ? (
-            <Button
-              variant={'outline'}
-              size={'lg'}
-              disabled
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-stone-400/80 text-white text-sm font-bold cursor-not-allowed opacity-95"
-            >
-              <AlertTriangle className="w-4 h-4" /> Unavailable
-            </Button>
-          ) : isSold ? (
-            <Button
-              variant={'outline'}
-              size={'lg'}
-              disabled
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-emerald-600/90 text-white text-sm font-bold cursor-not-allowed opacity-95"
-            >
-              <CheckCircle className="w-4 h-4" /> Sold
-            </Button>
-          ) : (
-            <>
-              {isSell && (
-                <Button
-                  size={'lg'}
-                  onClick={handleBuy}
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold text-white bg-orange-500 hover:bg-orange-600"
-                >
-                  <Zap className="w-4 h-4" /> Make an Offer
-                </Button>
-              )}
-              {isRent && (
-                <Button
-                  size={'lg'}
-                  onClick={handleBuy}
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-600"
-                >
-                  <Package className="w-4 h-4" /> Request to Rent
-                </Button>
-              )}
-              {isService && (
-                <Button
-                  size={'lg'}
-                  onClick={handleBuy}
-                  className="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold text-white bg-violet-700 hover:bg-violet-600"
-                >
-                  <CheckCircle className="w-4 h-4" /> Book Service
-                </Button>
-              )}
-              <Button
-                variant={'outline'}
-                size={'lg'}
-                onClick={handleMessage}
-                disabled={messaging}
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-lg border-2 border-stone-200 dark:border-[#2a2d3e] text-stone-700 dark:text-stone-200 text-sm font-semibold hover:border-stone-400 dark:hover:border-stone-500 hover:bg-stone-50 dark:hover:bg-[#252837]"
-              >
-                <MessageCircle className="w-4 h-4" />{' '}
-                {messaging ? 'Opening chat...' : 'Message Seller'}
-              </Button>
-            </>
-          )}
-        </div>
-      )}
+      <MobileStickyButtons
+        isOwnListing={isOwnListing}
+        visitorUnavailableState={visitorUnavailableState}
+        isSold={isSold}
+        isSell={isSell}
+        isRent={isRent}
+        isDeletedState={isDeletedState}
+        isListingAvailable={isListingAvailable}
+        toggling={toggling}
+        deleting={deleting}
+        listingId={id}
+        router={router}
+        handleMessage={handleMessage}
+        handleBuy={handleBuy}
+        handleListingVisibility={handleListingVisibility}
+        handleRemoveListing={handleRemoveListing}
+      />
     </div>
   );
 }

@@ -14,7 +14,7 @@ import {
   Trash2,
   Users,
   X,
-  XCircle,
+  XCircle
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -30,7 +30,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import {
@@ -38,12 +38,13 @@ import {
   deleteAdminUser
 } from '@/services/adminUsersService';
 import { useConfirmDialog } from '@/utils/ConfirmDialogContext';
+import { formatDateTime, formatTime12h } from '@/utils/string-builder';
 
-import { type AdminUserRecord } from './_types/admin-users';
-import {
+import type {
   VerifStatus,
   SortDir,
   SortField,
+  AdminUserRecord,
   AdminUser
 } from './_types/admin-users';
 import { getAdminUsers } from './_services/admin-users';
@@ -71,29 +72,6 @@ function getCurrentAdminSnapshot(): { fullName: string; email: string } | null {
   } catch {
     return null;
   }
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-function formatDateTime(value?: string | null): string {
-  if (!value) return 'Never';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Never';
-  return date.toLocaleDateString('en-PH', {
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric',
-  });
-}
-
-function formatTime12h(value?: string | null): string {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleTimeString('en-PH', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────

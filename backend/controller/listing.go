@@ -22,9 +22,9 @@ func CreateListing(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Invalid request body. Please contact support.", err)
 	}
 
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	if err := middleware.ValidateCreateListingInput(&body, false); err != nil {
@@ -45,9 +45,9 @@ func GetListingEditById(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Listing ID is required", nil)
 	}
 
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	listing, err := repository.GetListingEditDataById(userId, listingId)
@@ -94,7 +94,7 @@ func GetListingEditById(c *fiber.Ctx) error {
 		data["availability"] = listing.AvailableFrom.Format("2006-01-02")
 	}
 
-	if listing.Type == "rent" {
+	if listing.Type == "RENT" {
 		if listing.MinRentalPeriod > 0 {
 			data["minPeriod"] = strconv.Itoa(listing.MinRentalPeriod)
 		}
@@ -117,9 +117,9 @@ func UpdateListing(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Invalid request body. Please contact support.", err)
 	}
 
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	if err := middleware.ValidateCreateListingInput(&body, true); err != nil {
@@ -139,9 +139,9 @@ func DeleteListing(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Listing ID is required", nil)
 	}
 
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	if err := repository.DeleteListing(userId, listingId); err != nil {
@@ -160,9 +160,9 @@ func ToggleListingVisibility(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Listing ID is required", nil)
 	}
 
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	nextStatus, err := repository.ToggleListingVisibility(userId, listingId)
@@ -235,7 +235,7 @@ func GetListingById(c *fiber.Ctx) error {
 	}
 
 	switch listing.Type {
-	case "rent":
+	case "RENT":
 		extra["minPeriod"] = formatMinPeriod(listing.MinRentalPeriod, listing.PriceUnit)
 		if listing.AvailableFrom != nil {
 			extra["available_from"] = listing.AvailableFrom.Format("2006-01-02")
@@ -244,7 +244,7 @@ func GetListingById(c *fiber.Ctx) error {
 		extra["deposit"] = listing.Deposit
 		extra["amenities"] = included
 		extra["daysOff"] = daysOff
-	case "service":
+	case "SERVICE":
 		if listing.AvailableFrom != nil {
 			extra["available_from"] = listing.AvailableFrom.Format("2006-01-02")
 			extra["availability"] = listing.AvailableFrom.Format("Jan 02, 2006")
@@ -296,9 +296,9 @@ func AddListingBookmark(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Listing ID is required", nil)
 	}
 
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	if err := repository.AddBookmark(userId, listingId); err != nil {
@@ -316,9 +316,9 @@ func RemoveListingBookmark(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Listing ID is required", nil)
 	}
 
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	if err := repository.RemoveBookmark(userId, listingId); err != nil {
@@ -336,9 +336,9 @@ func MarkListingAsComplete(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Listing ID is required", nil)
 	}
 
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	affectedConversationIds, listingMarkedSold, err := repository.MarkListingAsComplete(userId, listingId)
@@ -400,9 +400,9 @@ func ReportListing(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Listing ID is required", nil)
 	}
 
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	var body model.ReportListingBody
@@ -445,9 +445,9 @@ func GetMyListingReview(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Listing ID is required", nil)
 	}
 
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	review, err := repository.GetMyListingReview(userId, listingId)
@@ -471,9 +471,9 @@ func CreateListingReview(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Listing ID is required", nil)
 	}
 
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	var body model.ReviewListingBody
@@ -507,9 +507,9 @@ func UpdateListingReview(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Listing ID is required", nil)
 	}
 
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	var body model.ReviewListingBody
@@ -543,9 +543,9 @@ func DeleteListingReview(c *fiber.Ctx) error {
 		return SendErrorResponse(c, 400, "Listing ID is required", nil)
 	}
 
-	userId := fmt.Sprintf("%v", c.Locals("userId"))
-	if strings.TrimSpace(userId) == "" || userId == "%!v(<nil>)" {
-		return SendErrorResponse(c, 401, "User is not authenticated", nil)
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		return SendErrorResponse(c, 401, err.Error(), nil)
 	}
 
 	if err := repository.DeleteListingReview(userId, listingId); err != nil {

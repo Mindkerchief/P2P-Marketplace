@@ -1,7 +1,7 @@
-import {
-  type AdminUsersQuery,
-  type AdminUsersResponse,
-  type AdminUserRecord
+import type {
+  AdminUsersQuery,
+  AdminUsersResponse,
+  AdminUserRecord
 } from '../_types/admin-users';
 
 export async function getAdminUsers(

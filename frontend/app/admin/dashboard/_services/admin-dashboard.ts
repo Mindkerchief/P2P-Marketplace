@@ -1,8 +1,8 @@
-import {
-  type AdminDashboardPayload,
-  type AdminDashboardStats,
-  type AdminListingTypeBreakdown,
-  type AdminWeeklyNewUsers,
+import type {
+  AdminDashboardPayload,
+  AdminDashboardStats,
+  AdminListingTypeBreakdown,
+  AdminWeeklyNewUsers
 } from "../_types/admin-dashboard";
 
 export async function getAdminDashboardStats(): Promise<AdminDashboardPayload> {

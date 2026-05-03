@@ -342,6 +342,40 @@ func GetConversationsByUserPage(userId string, limit, offset int, search, tab st
 	return rows, total, nil
 }
 
+func GetUnreadMessageCount(userId string) (int, error) {
+	db := middleware.DBConn
+	var totalUnread int
+
+	query := `
+		SELECT COALESCE(SUM(unread.unread_count), 0) AS total_unread
+		FROM (
+			SELECT c.id,
+				COUNT(*) AS unread_count
+			FROM public.conversations c
+			JOIN public.conversation_members cm
+				ON cm.conversation_id = c.id
+				AND cm.user_id = $1
+				AND cm.deleted_at IS NULL
+			LEFT JOIN public.messages m
+				ON m.conversation_id = c.id
+				AND m.sender_id <> $1
+				AND m.is_unsent = FALSE
+				AND m.created_at > COALESCE(cm.last_read_at, to_timestamp(0))
+			LEFT JOIN public.message_deletions md
+				ON md.message_id = m.id
+				AND md.user_id = $1
+			WHERE md.id IS NULL
+			GROUP BY c.id
+		) unread
+	`
+
+	if err := db.Raw(query, userId).Row().Scan(&totalUnread); err != nil {
+		return 0, fmt.Errorf("Failed to count unread messages")
+	}
+
+	return totalUnread, nil
+}
+
 func GetConversationById(userId, conversationId string) (model.ConversationFromDb, error) {
 	db := middleware.DBConn
 	var row model.ConversationFromDb

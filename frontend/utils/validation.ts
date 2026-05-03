@@ -201,7 +201,7 @@ export function validateListingStep(
       if (tagError) errors.highlights = tagError;
     }
 
-    if (input.type === 'sell') {
+    if (input.type === 'SELL') {
       if (!input.condition?.trim()) {
         errors.condition = 'Please select a condition.';
       } else if (!CONDITION_SET.has(input.condition)) {
@@ -224,7 +224,7 @@ export function validateListingStep(
       }
     }
 
-    if (input.type === 'rent') {
+    if (input.type === 'RENT') {
       const minPeriod = (input.minPeriod ?? '').trim();
       if (!minPeriod) {
         errors.minPeriod = 'Minimum rental period is required.';
@@ -267,7 +267,7 @@ export function validateListingStep(
       }
     }
 
-    if (input.type === 'service') {
+    if (input.type === 'SERVICE') {
       const turnaround = (input.turnaround ?? '').trim();
       if (!turnaround) {
         errors.turnaround = 'Turnaround time is required.';

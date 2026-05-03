@@ -67,6 +67,7 @@ func AppRoutes(app *fiber.App) {
 	app.Get("/admin/verifications", controller.AuthenticateUser, privateLimiter, controller.GetAdminVerifications)
 	app.Patch("/admin/verifications/:id/status", controller.AuthenticateUser, privateLimiter, controller.SetAdminVerificationStatus)
 	app.Get("/messages/conversations", controller.AuthenticateUser, privateLimiter, controller.GetConversations)
+	app.Get("/messages/unread-count", controller.AuthenticateUser, privateLimiter, controller.GetUnreadMessageCount)
 	app.Post("/messages/conversations/from-listing", controller.AuthenticateUser, privateLimiter, controller.CreateConversationFromListing)
 	app.Get("/messages/conversations/:id", controller.AuthenticateUser, privateLimiter, controller.GetConversation)
 	app.Patch("/messages/conversations/:id/offer", controller.AuthenticateUser, privateLimiter, controller.UpdateConversationOfferByOwner)

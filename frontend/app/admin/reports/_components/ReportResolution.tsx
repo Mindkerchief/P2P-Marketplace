@@ -22,14 +22,14 @@ import { cn } from '@/lib/utils';
 import { formatPrice } from '@/utils/string-builder';
 
 import {
-  type ReportActionType,
-  type ReportActionsModalProps,
-} from '../_types/admin-reports';
-import {
   ACTION_GROUPS,
   ACTION_OPTIONS,
-  SEVERITY_STYLES,
+  SEVERITY_STYLES
 } from '../_constants/admin-reports';
+import type {
+  ReportActionType,
+  ReportActionsModalProps
+} from '../_types/admin-reports';
 
 function InfoPair({
   icon: Icon,

@@ -1,4 +1,4 @@
-import { type ListingTypeU } from '@/types/listings';
+import type { ListingType } from '@/types/listings';
 
 export type TransactionStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 export type SortDir = 'asc' | 'desc';
@@ -14,7 +14,7 @@ export type SortField =
 export type AdminTransactionRecord = {
   id: string;
   listing_id: string;
-  listing_type: ListingTypeU;
+  listing_type: ListingType;
   listing_title: string;
   listing_price_unit: string;
   listing_image_url: string;

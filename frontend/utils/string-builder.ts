@@ -90,3 +90,71 @@ export function formatOverallRating(
   const safeRating = Number.isFinite(rating) ? Number(rating) : 0;
   return `${safeRating.toFixed(1)} (${count})`;
 }
+
+export function formatDate(value?: string | null, fallback = 'Never'): string {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toLocaleDateString('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+export function formatTime(value?: string | null): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString('en-PH', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+export function formatTime12h(value?: string | null, fallback = ''): string {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toLocaleTimeString('en-PH', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+export function formatDateTime(value?: string | null, fallback = 'Never'): string {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toLocaleDateString('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+export function formatDateRange(start?: string | null, end?: string | null): string {
+  if (!start || !end) return 'N/A';
+  const s = new Date(start);
+  const e = new Date(end);
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return 'N/A';
+  return `${s.toLocaleDateString('en-PH', { month: 'short', day: '2-digit', year: 'numeric' })} - ${e.toLocaleDateString('en-PH', { month: 'short', day: '2-digit', year: 'numeric' })}`;
+}
+
+export function formatDateSeparator(iso: string): string {
+  const date = new Date(iso);
+  const now = new Date();
+  const diff = now.getDate() - date.getDate();
+  if (diff === 0 && now.getMonth() === date.getMonth()) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  return date.toLocaleDateString('en-PH', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  });
+}

@@ -1,6 +1,4 @@
-// TODO: Resolve this later
-export type ListingType = 'sell' | 'rent' | 'service';
-export type ListingTypeU = 'SELL' | 'RENT' | 'SERVICE';
+export type ListingType = 'SELL' | 'RENT' | 'SERVICE';
 
 export const CATEGORIES = [
   'Agriculture & Gardening',
@@ -25,8 +23,8 @@ export const CATEGORIES = [
 ];
 
 export const PRICE_UNITS: Record<ListingType, string[]> = {
-  sell: ['Fixed Price', 'Starting Price', 'Negotiable', 'Contact for Price'],
-  rent: [
+  SELL: ['Fixed Price', 'Starting Price', 'Negotiable', 'Contact for Price'],
+  RENT: [
     '/ minute',
     '/ hour',
     '/ day',
@@ -35,7 +33,7 @@ export const PRICE_UNITS: Record<ListingType, string[]> = {
     '/ month',
     '/ year',
   ],
-  service: [
+  SERVICE: [
     '/ hour',
     '/ session',
     '/ project',

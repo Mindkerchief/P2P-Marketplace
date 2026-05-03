@@ -192,9 +192,9 @@ func AuthenticateUser(c *fiber.Ctx) error {
 
 func Me(c *fiber.Ctx) error {
 	// Check if user successfully identified
-	userId := c.Locals("userId")
-	if userId == nil {
-		// Clear the session cookie if userId is not found
+	userId, err := GetAuthenticatedUserId(c)
+	if err != nil {
+		// Clear the session cookie if userId is not found or invalid
 		c.Cookie(middleware.ExpiredCookie())
 		return SendErrorResponse(c, 401, "User is not authenticated", nil)
 	}

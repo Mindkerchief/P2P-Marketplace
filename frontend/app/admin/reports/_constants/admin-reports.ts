@@ -5,10 +5,7 @@ import {
   Trash2
 } from 'lucide-react';
 
-import {
-  type ReportStatus,
-  type ActionOption
-} from '../_types/admin-reports';
+import type { ReportStatus, ActionOption } from '../_types/admin-reports';
 
 export const STATUS_CONFIG: Record<ReportStatus, { cls: string; label: string }> = {
   PENDING: {

@@ -4,7 +4,7 @@ import {
   XCircle
 } from 'lucide-react';
 
-import { IdType, VerifStatus } from '../_types/admin-verifications';
+import type { IdType, VerifStatus } from '../_types/admin-verifications';
 
 export const VERIFICATION_REVIEW_REASON_MAX_LENGTH = 500;
 export const ID_TYPE_OPTIONS: [IdType, string][] = [
