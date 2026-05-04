@@ -3,9 +3,7 @@
 import {
   AlertTriangle,
   Ban,
-  ChevronDown,
-  ChevronsUpDown,
-  ChevronUp,
+  XCircle,
   CircleDashed,
   Clock,
   RotateCw,
@@ -13,8 +11,7 @@ import {
   ShieldCheck,
   Trash2,
   Users,
-  X,
-  XCircle
+  X
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -32,6 +29,11 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
+import { FilterSelect } from '@/components/admin/FilterSelect';
+import {
+  type SortDir,
+  TableSortIcon
+} from '@/components/admin/TableSortIcon';
 import { cn } from '@/lib/utils';
 import {
   setAdminUserActive, 
@@ -40,9 +42,9 @@ import {
 import { useConfirmDialog } from '@/utils/ConfirmDialogContext';
 import { formatDateTime, formatTime12h } from '@/utils/string-builder';
 
+import { VerifBadge } from './_components/VerifBadge';
+import { StatusDot } from './_components/StatusDot';
 import type {
-  VerifStatus,
-  SortDir,
   SortField,
   AdminUserRecord,
   AdminUser
@@ -74,114 +76,6 @@ function getCurrentAdminSnapshot(): { fullName: string; email: string } | null {
   }
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────────────
-function VerifBadge({ status }: { status: VerifStatus }) {
-  const map = {
-    VERIFIED:
-      'bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300',
-    PENDING:
-      'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300',
-    UNVERIFIED:
-      'bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400',
-    REJECTED: 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400',
-  };
-  const label = {
-    VERIFIED: 'Verified',
-    PENDING: 'Pending',
-    UNVERIFIED: 'Unverified',
-    REJECTED: 'Rejected',
-  };
-  return (
-    <span
-      className={cn('text-xs font-bold px-2 py-0.5 rounded-md', map[status])}
-    >
-      {label[status]}
-    </span>
-  );
-}
-
-function StatusDot({ active }: { active: boolean }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 text-sm font-semibold',
-        active
-          ? 'text-teal-600 dark:text-teal-400'
-          : 'text-stone-400 dark:text-stone-500',
-      )}
-    >
-      <span
-        className={cn(
-          'w-1.5 h-1.5 rounded-full',
-          active ? 'bg-teal-500' : 'bg-stone-400',
-        )}
-      />
-      {active ? 'Active' : 'Inactive'}
-    </span>
-  );
-}
-
-function SortIcon({
-  field,
-  sort,
-}: {
-  field: SortField;
-  sort: { field: SortField; dir: SortDir };
-}) {
-  if (sort.field !== field)
-    return (
-      <ChevronsUpDown className="w-3 h-3 text-stone-300 dark:text-stone-600 ml-1" />
-    );
-  return sort.dir === 'asc' ? (
-    <ChevronUp className="w-3 h-3 text-stone-700 dark:text-stone-200 ml-1" />
-  ) : (
-    <ChevronDown className="w-3 h-3 text-stone-700 dark:text-stone-200 ml-1" />
-  );
-}
-
-// ── Shared filter select ───────────────────────────────────────────────────────
-function FilterSelect({
-  value,
-  onChange,
-  options,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: [string, string][];
-}) {
-  return (
-    <div className="relative shrink-0">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="pl-3 pr-8 py-2 h-9 bg-transparent border border-stone-200 dark:border-[#2a2d3e] rounded-lg text-sm text-stone-700 dark:text-stone-200 outline-none focus:border-stone-400 transition-colors appearance-none cursor-pointer dark:bg-[#13151f]"
-      >
-        {options.map(([v, l]) => (
-          <option key={v} value={v}>
-            {l}
-          </option>
-        ))}
-      </select>
-      <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
-        <svg
-          className="w-3.5 h-3.5 text-stone-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-// ── Main page ──────────────────────────────────────────────────────────────────
 export default function UsersPage() {
   const { openDialog } = useConfirmDialog();
   const [search, setSearch] = useState('');
@@ -457,7 +351,7 @@ export default function UsersPage() {
     >
       <span className="inline-flex items-center">
         {label}
-        <SortIcon field={field} sort={sort} />
+        <TableSortIcon field={field} sort={sort} />
       </span>
     </TableHead>
   );

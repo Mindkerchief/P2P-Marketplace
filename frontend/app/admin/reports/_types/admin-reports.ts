@@ -1,4 +1,3 @@
-export type SortDir = 'asc' | 'desc';
 export type SortField =
   | 'reporter'
   | 'listingOwner'
