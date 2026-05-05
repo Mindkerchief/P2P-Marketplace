@@ -504,7 +504,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('pageshow', onPageShow);
   }, [isPublicRoute, router]);
 
-  if (isLoading) return <LoadingPage />;
+  // Prevent rendering protected routes visibly while redirecting
+  const isAuthConflict = isAuth && isAuthRoute;
+  const isNavigatingAdminAway = isAuth && isAdminRole && !isAdminRoute && !isSharedAuthRoute;
+  const isNavigatingUserAway = isAuth && !isAdminRole && isAdminRoute;
+  const isUnauthorized = !isAuth && !isPublicRoute;
+
+  if (isLoading || isAuthConflict || isNavigatingAdminAway || isNavigatingUserAway || isUnauthorized) {
+    return <LoadingPage />;
+  }
 
   return (
     <UserContext.Provider

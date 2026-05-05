@@ -190,6 +190,43 @@ func AuthenticateUser(c *fiber.Ctx) error {
 	return c.Next()
 }
 
+func AuthenticateAdmin(c *fiber.Ctx) error {
+	// Check for session token in cookies
+	sessionToken := c.Cookies("session_token")
+	if sessionToken == "" {
+		return SendErrorResponse(c, 401, "Missing session token", nil)
+	}
+
+	// Fetch session data from DB
+	sessionId := middleware.HashToken(sessionToken)
+	sessionFromDb, err := repository.GetSessionById(sessionId)
+	if err != nil {
+		return SendErrorResponse(c, 401, "Invalid session token", err)
+	}
+
+	// Remove the invalid session cookie from client if session is invalid
+	if sessionFromDb.UserId == "" || sessionFromDb.IsRevoked || sessionFromDb.ExpiresAt.Before(time.Now()) {
+		c.Cookie(middleware.ExpiredCookie())
+		return SendErrorResponse(c, 401, "Session expired or revoked", nil)
+	}
+
+	userFromDb, err := repository.GetUserById(sessionFromDb.UserId)
+	if err != nil || !userFromDb.IsActive {
+		c.Cookie(middleware.ExpiredCookie())
+		_ = repository.DeleteUserSessions(sessionFromDb.UserId)
+		return SendErrorResponse(c, 401, "Account is inactive", nil)
+	}
+
+	if userFromDb.Role != "ADMIN" && userFromDb.Role != "SUPER_ADMIN" {
+		return SendErrorResponse(c, 403, "Access denied. Admins only.", nil)
+	}
+
+	// Store userId and role in context for future handlers to use
+	c.Locals("userId", sessionFromDb.UserId)
+	c.Locals("userRole", userFromDb.Role)
+	return c.Next()
+}
+
 func Me(c *fiber.Ctx) error {
 	// Check if user successfully identified
 	userId, err := GetAuthenticatedUserId(c)
