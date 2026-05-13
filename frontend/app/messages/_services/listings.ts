@@ -105,10 +105,6 @@ export async function toggleConversationDealAgreement(
   emitMessagesUpdate();
 }
 
-
-
-
-
 export async function markListingAsComplete(id: string): Promise<void> {
   try {
     const res = await fetch(
