@@ -10,7 +10,7 @@ export type IdType =
   | 'hdmf'
   | 'voters'
   | 'acr';
-export type SortDir = 'asc' | 'desc';
+
 export type SortField = 'applicant' | 'dateOfBirth' | 'submitted' | 'reviewedBy';
 export type VerifStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
 
@@ -92,3 +92,11 @@ export type AdminVerificationsResponse = {
   limit: number;
   offset: number;
 };
+
+export interface DetailModalProps {
+  verif: AdminVerification;
+  onClose: () => void;
+  onApprove: (id: string, reason: string) => Promise<void>;
+  onReject: (id: string, reason: string) => Promise<void>;
+  actionLoading?: boolean;
+}

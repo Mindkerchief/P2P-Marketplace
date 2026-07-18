@@ -1,13 +1,5 @@
 import type { ListingType } from '@/types/listings';
 
-export type ListingStatus =
-  | 'AVAILABLE'
-  | 'UNAVAILABLE'
-  | 'SOLD'
-  | 'BANNED'
-  | 'DELETED';
-
-export type SortDir = 'asc' | 'desc';
 export type SortField =
   | 'title'
   | 'type'
@@ -20,6 +12,13 @@ export type SortField =
   | 'deletedAt'
   | 'owner'
   | 'status';
+
+export type ListingStatus =
+  | 'AVAILABLE'
+  | 'UNAVAILABLE'
+  | 'SOLD'
+  | 'BANNED'
+  | 'DELETED';
 
 export interface AdminListing {
   id: string;

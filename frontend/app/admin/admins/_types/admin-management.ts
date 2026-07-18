@@ -62,3 +62,15 @@ export type AdminAccountsResponse = {
   limit: number;
   offset: number;
 };
+
+export interface AddModalProps {
+  onClose: () => void;
+  onAdd: (admin: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    role: AdminRole;
+    password: string;
+  }) => Promise<void>;
+}

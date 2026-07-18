@@ -1,15 +1,15 @@
 import type { ListingType } from '@/types/listings';
 
-export type TransactionStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
-export type SortDir = 'asc' | 'desc';
 export type SortField =
-  | 'client'
-  | 'owner'
-  | 'listing'
-  | 'scheduleEnd'
-  | 'totalPrice'
-  | 'completedAt'
-  | 'createdAt';
+| 'client'
+| 'owner'
+| 'listing'
+| 'scheduleEnd'
+| 'totalPrice'
+| 'completedAt'
+| 'createdAt';
+
+export type TransactionStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 
 export type AdminTransactionRecord = {
   id: string;

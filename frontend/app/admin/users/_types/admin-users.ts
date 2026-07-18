@@ -1,6 +1,3 @@
-export type Role = 'USER' | 'ADMIN' | 'SUPER_ADMIN';
-export type VerifStatus = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
-export type SortDir = 'asc' | 'desc';
 export type SortField =
   | 'name'
   | 'email'
@@ -12,6 +9,10 @@ export type SortField =
   | 'locked_until'
   | 'updated'
   | 'deleted';
+
+export type Role = 'USER' | 'ADMIN' | 'SUPER_ADMIN';
+export type VerifStatus = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+
 
 export interface AdminUser {
   id: string;

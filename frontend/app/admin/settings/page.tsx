@@ -1,14 +1,11 @@
 'use client';
 
 import {
-  AlertTriangle,
   Camera,
   CheckCircle2,
-  Eye,
-  EyeOff,
   Lock,
   Trash2,
-  User,
+  User
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -23,6 +20,9 @@ import {
 } from '@/components/ui/card';
 import { FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { InlineFeedback } from './_components/InlineFeedback';
+import { PasswordStrengthBar } from './_components/PasswordStrengthBar';
+import { EyeToggle } from '@/components/EyeToggle';
 import ImageSafe from '@/components/image/ImageSafe';
 import { Separator } from '@/components/ui/separator';
 import { encodeImageToPayload } from '@/lib/imageCompression';
@@ -33,103 +33,6 @@ import {
 } from '@/services/profileService';
 import { useUser } from '@/utils/UserContext';
 
-// ── Password strength ──────────────────────────────────────────────────────────
-const STRENGTH_CONFIG = [
-  { label: 'Weak', bar: 'bg-red-500', text: 'text-red-500' },
-  { label: 'Fair', bar: 'bg-amber-500', text: 'text-amber-500' },
-  { label: 'Good', bar: 'bg-yellow-400', text: 'text-yellow-500' },
-  { label: 'Strong', bar: 'bg-teal-500', text: 'text-teal-500' },
-] as const;
-
-function getStrengthScore(pw: string): number {
-  return [
-    pw.length >= 8,
-    /[A-Z]/.test(pw),
-    /[0-9]/.test(pw),
-    /[!@#$%^&*()_+\-=[\]{}|;',.<>?]/.test(pw),
-  ].filter(Boolean).length;
-}
-
-/** Eye-toggle button for password inputs */
-function EyeToggle({
-  show,
-  onToggle,
-}: {
-  show: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <Button
-      variant="icon"
-      onClick={onToggle}
-      className="text-muted-foreground absolute inset-y-0 right-0 rounded-l-none"
-    >
-      {show ? <EyeOff /> : <Eye />}
-    </Button>
-  );
-}
-
-/** Inline success / error feedback banner */
-function InlineFeedback({
-  msg,
-  type,
-}: {
-  msg: string;
-  type: 'success' | 'error';
-}) {
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-2.5 px-4 py-3 rounded-lg text-sm font-medium',
-        type === 'success'
-          ? 'bg-teal-50 dark:bg-teal-950/30 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300'
-          : 'bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400',
-      )}
-    >
-      {type === 'success' ? (
-        <CheckCircle2 className="w-4 h-4 shrink-0" />
-      ) : (
-        <AlertTriangle className="w-4 h-4 shrink-0" />
-      )}
-      {msg}
-    </div>
-  );
-}
-
-/** Four-segment password strength bar with label */
-function PasswordStrengthBar({ password }: { password: string }) {
-  if (!password) return null;
-
-  const score = getStrengthScore(password); // 0–4
-  const cfg = STRENGTH_CONFIG[Math.max(0, score - 1)]; // clamp so index never goes below 0
-  const filled = Math.max(1, score); // always show at least 1 segment
-
-  return (
-    <div className="space-y-2">
-      {/* Segmented bar */}
-      <div className="flex gap-1.5">
-        {Array.from({ length: 4 }, (_, i) => (
-          <div
-            key={i}
-            className={cn(
-              'flex-1 h-1.5 rounded-full transition-all duration-300',
-              i < filled ? cfg.bar : 'bg-stone-200 dark:bg-stone-700',
-            )}
-          />
-        ))}
-      </div>
-
-      {/* Strength label */}
-      <p className={cn('text-[11px] font-bold', cfg.text)}>
-        {cfg.label} password
-      </p>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Main page
-// ─────────────────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const { user, saveUserData } = useUser();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
